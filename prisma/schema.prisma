@@ -1,0 +1,161 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Participant {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  club      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  kilometerEntries     KilometerEntry[]
+  rowingCareCupRegs    RowingCareCupRegistration[]
+  otpCodes            OtpCode[]
+
+  @@map("participants")
+}
+
+model KilometerEntry {
+  id               String   @id @default(cuid())
+  participantId    String
+  date             DateTime
+  activityType     ActivityType
+  kilometers       Float
+  duration         String?
+  location         String?
+  participationType ParticipationType @default(INDIVIDUAL)
+  participantCount Int      @default(1)
+  description      String?  @db.Text
+  photoUrl         String?
+  validated        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  participant      Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@map("kilometer_entries")
+}
+
+model RowingCareCupRegistration {
+  id            String   @id @default(cuid())
+  participantId String
+  category      String
+  distance      String
+  gender        String?
+  teamType      String?
+  price         Float
+  paid          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@map("rowing_care_cup_registrations")
+}
+
+model Club {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  city        String
+  country     String
+  totalKm     Float    @default(0)
+  memberCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("clubs")
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  description String    @db.Text
+  dateStart   DateTime
+  dateEnd     DateTime?
+  timeInfo    String?
+  eventType   String
+  color       String    @default("from-pink-500 to-rose-500")
+  activities  Json?
+  status      EventStatus @default(UPCOMING)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("events")
+}
+
+model Photo {
+  id            String   @id @default(cuid())
+  participantId String
+  url           String
+  caption       String?
+  approved      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("photos")
+}
+
+model OtpCode {
+  id           String   @id @default(cuid())
+  email        String
+  code         String
+  expiresAt    DateTime
+  used         Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  // Relations
+  participant  Participant? @relation(fields: [email], references: [email], onDelete: Cascade)
+
+  @@map("otp_codes")
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      AdminRole @default(ADMIN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+// Enums
+enum ActivityType {
+  INDOOR
+  OUTDOOR
+  AVIFIT
+}
+
+enum ParticipationType {
+  INDIVIDUAL
+  COLLECTIVE
+}
+
+enum EventStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  FEATURED
+}
+
+enum AdminRole {
+  ADMIN
+  SUPER_ADMIN
+}
