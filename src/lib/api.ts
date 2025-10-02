@@ -1,21 +1,16 @@
-import { 
-  participantService, 
-  kilometerService, 
-  eventService, 
-  photoService, 
-  rowingCareCupService,
-  adminService,
-  clubService
-} from './database';
-import { sendOTP, verifyOTP } from './otp';
-import { sendRegistrationEmail } from './email';
+const API_URL = import.meta.env.VITE_APP_URL || 'http://localhost:3003';
 
-// Simulation d'API pour l'authentification
+// Authentification
 export const authService = {
   async sendOTP(email: string): Promise<boolean> {
     try {
-      const result = await sendOTP(email);
-      return result.success;
+      const response = await fetch(`${API_URL}/api/otp/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await response.json();
+      return data.success;
     } catch (error) {
       console.error('Error sending OTP:', error);
       return false;
@@ -24,28 +19,13 @@ export const authService = {
 
   async verifyOTP(email: string, code: string): Promise<{ success: boolean; participant?: any }> {
     try {
-      const otpResult = await verifyOTP(email, code);
-      
-      if (otpResult.success) {
-        let participant = await participantService.findByEmail(email);
-        
-        if (!participant) {
-          // Créer un nouveau participant
-          participant = await participantService.create({
-            firstName: email.split('@')[0], // Utiliser la partie avant @ comme prénom temporaire
-            lastName: 'Participant',
-            email,
-            club: 'Club Nautique de Paris'
-          });
-          
-          // Envoyer l'email de bienvenue
-          await sendRegistrationEmail(email, participant.firstName, participant.lastName);
-        }
-        
-        return { success: true, participant };
-      } else {
-        return { success: false, message: otpResult.message };
-      }
+      const response = await fetch(`${API_URL}/api/otp/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code })
+      });
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error verifying OTP:', error);
       return { success: false };
@@ -56,25 +36,13 @@ export const authService = {
 export const adminAuthService = {
   async login(email: string, password: string): Promise<{ success: boolean; admin?: any }> {
     try {
-      const admin = await adminService.findByEmail(email);
-      if (!admin) {
-        return { success: false };
-      }
-      
-      const isValidPassword = await adminService.verifyPassword(password, admin.password);
-      if (!isValidPassword) {
-        return { success: false };
-      }
-      
-      return { 
-        success: true, 
-        admin: {
-          id: admin.id,
-          email: admin.email,
-          name: admin.name,
-          role: admin.role
-        }
-      };
+      const response = await fetch(`${API_URL}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error during admin login:', error);
       return { success: false };
@@ -90,15 +58,22 @@ export const participantAPI = {
     email: string;
     club?: string;
   }) {
-    return await participantService.create(data);
+    const response = await fetch(`${API_URL}/api/participants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return await response.json();
   },
 
   async getStats() {
-    return await participantService.getStats();
+    const response = await fetch(`${API_URL}/api/participants/stats`);
+    return await response.json();
   },
 
   async getAll() {
-    return await participantService.getAll();
+    const response = await fetch(`${API_URL}/api/participants`);
+    return await response.json();
   }
 };
 
@@ -116,33 +91,38 @@ export const kilometerAPI = {
     description?: string;
     photoUrl?: string;
   }) {
-    const entry = await kilometerService.create(data);
-    
-    // Mettre à jour les stats du club
-    if (data.location) {
-      await clubService.updateStats(data.location, data.kilometers);
-    }
-    
-    return entry;
+    const response = await fetch(`${API_URL}/api/kilometers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...data,
+        date: data.date.toISOString()
+      })
+    });
+    return await response.json();
   },
 
   async getByParticipant(participantId: string) {
-    return await kilometerService.getByParticipant(participantId);
+    const response = await fetch(`${API_URL}/api/kilometers/participant/${participantId}`);
+    return await response.json();
   },
 
   async getAll() {
-    return await kilometerService.getAll();
+    const response = await fetch(`${API_URL}/api/kilometers`);
+    return await response.json();
   },
 
   async getValidated() {
-    return await kilometerService.getValidated();
+    const response = await fetch(`${API_URL}/api/kilometers/validated`);
+    return await response.json();
   }
 };
 
 // API pour les événements
 export const eventAPI = {
   async getAll() {
-    return await eventService.getAll();
+    const response = await fetch(`${API_URL}/api/events`);
+    return await response.json();
   },
 
   async create(data: {
@@ -156,14 +136,24 @@ export const eventAPI = {
     activities?: string[];
     status?: 'UPCOMING' | 'ACTIVE' | 'COMPLETED' | 'FEATURED';
   }) {
-    return await eventService.create(data);
+    const response = await fetch(`${API_URL}/api/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...data,
+        dateStart: data.dateStart.toISOString(),
+        dateEnd: data.dateEnd?.toISOString()
+      })
+    });
+    return await response.json();
   }
 };
 
 // API pour les photos
 export const photoAPI = {
   async getApproved() {
-    return await photoService.getApproved();
+    const response = await fetch(`${API_URL}/api/photos/approved`);
+    return await response.json();
   },
 
   async create(data: {
@@ -171,7 +161,12 @@ export const photoAPI = {
     url: string;
     caption?: string;
   }) {
-    return await photoService.create(data);
+    const response = await fetch(`${API_URL}/api/photos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return await response.json();
   }
 };
 
@@ -185,47 +180,32 @@ export const rowingCareCupAPI = {
     teamType?: string;
     price: number;
   }) {
-    return await rowingCareCupService.create(data);
+    const response = await fetch(`${API_URL}/api/rowing-care-cup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return await response.json();
   },
 
   async getStats() {
-    return await rowingCareCupService.getStats();
+    const response = await fetch(`${API_URL}/api/rowing-care-cup/stats`);
+    return await response.json();
   }
 };
 
 // API pour les clubs
 export const clubAPI = {
   async getAll() {
-    return await clubService.getAll();
+    const response = await fetch(`${API_URL}/api/clubs`);
+    return await response.json();
   }
 };
 
 // API pour l'admin
 export const adminAPI = {
   async getDashboardStats() {
-    const [participants, kilometers, clubs, events, photos, entries, registrations] = await Promise.all([
-      participantService.getAll(),
-      kilometerService.getValidated(),
-      clubService.getAll(),
-      eventService.getAll(),
-      photoService.getApproved(),
-      kilometerService.getAll(),
-      rowingCareCupService.getStats()
-    ]);
-
-    const totalKilometers = kilometers.reduce((sum: number, entry: any) => sum + entry.kilometers, 0);
-    const pendingEntries = entries.filter((e: any) => !e.validated).length;
-    const allPhotos = await photoService.getAll();
-    const pendingPhotos = allPhotos.filter((p: any) => !p.approved).length;
-
-    return {
-      totalParticipants: participants.length,
-      totalKilometers,
-      totalClubs: clubs.length,
-      totalEvents: events.length,
-      pendingPhotos,
-      pendingEntries,
-      rowingRegistrations: registrations.total || 0
-    };
+    const response = await fetch(`${API_URL}/api/admin/stats`);
+    return await response.json();
   }
 };
