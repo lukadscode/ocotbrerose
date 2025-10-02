@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "octobre-rose-2025",
       cwd: "/var/www/octobrerose",
-      script: "server.js",
+      script: "server.cjs",
       exec_mode: "fork",
       instances: 1,
       env: {
