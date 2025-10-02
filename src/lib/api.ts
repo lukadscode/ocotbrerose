@@ -74,6 +74,27 @@ export const participantAPI = {
   async getAll() {
     const response = await fetch(`${API_URL}/api/participants`);
     return await response.json();
+  },
+
+  async update(id: string, data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    club?: string;
+  }) {
+    const response = await fetch(`${API_URL}/api/participants/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return await response.json();
+  },
+
+  async delete(id: string) {
+    const response = await fetch(`${API_URL}/api/participants/${id}`, {
+      method: 'DELETE'
+    });
+    return await response.json();
   }
 };
 

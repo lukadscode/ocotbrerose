@@ -34,20 +34,22 @@ const ParticipantsManager = () => {
   const fetchParticipants = async () => {
     setLoading(true);
     try {
-      setParticipants([
-        {
-          id: '1',
-          firstName: 'Marie',
-          lastName: 'Dupont',
-          email: 'marie.dupont@example.com',
-          club: 'Club Nautique Paris',
-          totalKm: 125.5,
-          entriesCount: 15,
-          registrationsCount: 1,
-          createdAt: new Date()
-        }
-      ]);
-      setTotalPages(1);
+      const response = await fetch('/api/participants');
+      const data = await response.json();
+
+      let filtered = data;
+      if (search.trim()) {
+        const searchLower = search.toLowerCase();
+        filtered = data.filter((p: Participant) =>
+          p.firstName.toLowerCase().includes(searchLower) ||
+          p.lastName.toLowerCase().includes(searchLower) ||
+          p.email.toLowerCase().includes(searchLower) ||
+          (p.club && p.club.toLowerCase().includes(searchLower))
+        );
+      }
+
+      setParticipants(filtered);
+      setTotalPages(Math.ceil(filtered.length / 20));
     } catch (error) {
       console.error('Error fetching participants:', error);
     } finally {
@@ -67,7 +69,14 @@ const ParticipantsManager = () => {
 
   const handleSave = async (id: string) => {
     try {
-      console.log('Updating participant:', id, editForm);
+      const response = await fetch(`/api/participants/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la mise à jour');
+
       setEditingId(null);
       fetchParticipants();
     } catch (error) {
@@ -82,7 +91,12 @@ const ParticipantsManager = () => {
     }
 
     try {
-      console.log('Deleting participant:', id);
+      const response = await fetch(`/api/participants/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la suppression');
+
       fetchParticipants();
     } catch (error) {
       console.error('Error deleting participant:', error);

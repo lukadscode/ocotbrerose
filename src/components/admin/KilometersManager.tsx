@@ -41,8 +41,18 @@ const KilometersManager = () => {
   const fetchEntries = async () => {
     setLoading(true);
     try {
-      setEntries([]);
-      setTotalPages(1);
+      const response = await fetch('/api/kilometers');
+      const data = await response.json();
+
+      let filtered = data;
+      if (filter === 'validated') {
+        filtered = data.filter((e: KilometerEntry) => e.validated);
+      } else if (filter === 'pending') {
+        filtered = data.filter((e: KilometerEntry) => !e.validated);
+      }
+
+      setEntries(filtered);
+      setTotalPages(Math.ceil(filtered.length / 20));
     } catch (error) {
       console.error('Error fetching entries:', error);
     } finally {
@@ -52,7 +62,12 @@ const KilometersManager = () => {
 
   const handleValidate = async (id: string) => {
     try {
-      console.log('Validating entry:', id);
+      const response = await fetch(`/api/kilometers/${id}/validate`, {
+        method: 'POST'
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la validation');
+
       fetchEntries();
     } catch (error) {
       console.error('Error validating entry:', error);
@@ -72,7 +87,12 @@ const KilometersManager = () => {
     }
 
     try {
-      console.log('Validating multiple entries');
+      const response = await fetch('/api/kilometers/validate-all', {
+        method: 'POST'
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la validation');
+
       fetchEntries();
     } catch (error) {
       console.error('Error validating entries:', error);
@@ -90,7 +110,14 @@ const KilometersManager = () => {
 
   const handleSave = async (id: string) => {
     try {
-      console.log('Updating entry:', id, editForm);
+      const response = await fetch(`/api/kilometers/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la mise à jour');
+
       setEditingId(null);
       fetchEntries();
     } catch (error) {
@@ -105,7 +132,12 @@ const KilometersManager = () => {
     }
 
     try {
-      console.log('Deleting entry:', id);
+      const response = await fetch(`/api/kilometers/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la suppression');
+
       fetchEntries();
     } catch (error) {
       console.error('Error deleting entry:', error);

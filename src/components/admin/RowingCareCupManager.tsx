@@ -12,7 +12,9 @@ const RowingCareCupManager = () => {
   const fetchRegistrations = async () => {
     setLoading(true);
     try {
-      setRegistrations([]);
+      const response = await fetch('/api/rowing-care-cup');
+      const data = await response.json();
+      setRegistrations(data);
     } catch (error) {
       console.error('Error fetching registrations:', error);
     } finally {
@@ -22,7 +24,12 @@ const RowingCareCupManager = () => {
 
   const handleMarkAsPaid = async (id: string) => {
     try {
-      console.log('Marking as paid:', id);
+      const response = await fetch(`/api/rowing-care-cup/${id}/mark-paid`, {
+        method: 'POST'
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la mise à jour');
+
       fetchRegistrations();
     } catch (error) {
       console.error('Error updating payment status:', error);
@@ -74,3 +81,6 @@ const RowingCareCupManager = () => {
 };
 
 export default RowingCareCupManager;
+
+
+export default RowingCareCupManager

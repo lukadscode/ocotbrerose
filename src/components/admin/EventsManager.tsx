@@ -37,7 +37,9 @@ const EventsManager = () => {
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      setEvents([]);
+      const response = await fetch('/api/events');
+      const data = await response.json();
+      setEvents(data);
     } catch (error) {
       console.error('Error fetching events:', error);
     } finally {
@@ -48,11 +50,17 @@ const EventsManager = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editingEvent) {
-        console.log('Updating event:', editingEvent.id, formData);
-      } else {
-        console.log('Creating event:', formData);
-      }
+      const url = editingEvent ? `/api/events/${editingEvent.id}` : '/api/events';
+      const method = editingEvent ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de l\'enregistrement');
+
       setShowForm(false);
       setEditingEvent(null);
       resetForm();
@@ -81,7 +89,12 @@ const EventsManager = () => {
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Supprimer l'événement "${title}" ?`)) return;
     try {
-      console.log('Deleting event:', id);
+      const response = await fetch(`/api/events/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la suppression');
+
       fetchEvents();
     } catch (error) {
       console.error('Error deleting event:', error);

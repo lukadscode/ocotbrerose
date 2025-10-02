@@ -33,7 +33,6 @@ app.post("/api/participants", async (req, res) => {
   try {
     const { firstName, lastName, email, club } = req.body;
 
-    // Vérifier si le participant existe déjà
     const existing = await prisma.participant.findUnique({
       where: { email }
     });
@@ -56,11 +55,65 @@ app.post("/api/participants", async (req, res) => {
 app.get("/api/participants", async (req, res) => {
   try {
     const participants = await prisma.participant.findMany({
+      include: {
+        kilometerEntries: true,
+        rowingCareCupRegs: true
+      },
       orderBy: { createdAt: "desc" }
     });
-    res.json(participants);
+
+    const participantsWithStats = participants.map(p => ({
+      id: p.id,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      email: p.email,
+      club: p.club,
+      participantType: p.participantType,
+      organizationName: p.organizationName,
+      city: p.city,
+      totalKm: p.kilometerEntries
+        .filter(e => e.validated)
+        .reduce((sum, e) => sum + e.kilometers, 0),
+      entriesCount: p.kilometerEntries.length,
+      registrationsCount: p.rowingCareCupRegs.length,
+      createdAt: p.createdAt
+    }));
+
+    res.json(participantsWithStats);
   } catch (error) {
     console.error("Error fetching participants:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put("/api/participants/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { firstName, lastName, email, club } = req.body;
+
+    const participant = await prisma.participant.update({
+      where: { id },
+      data: { firstName, lastName, email, club }
+    });
+
+    res.json(participant);
+  } catch (error) {
+    console.error("Error updating participant:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/api/participants/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.participant.delete({
+      where: { id }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting participant:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -255,6 +308,73 @@ app.get("/api/kilometers/participant/:participantId", async (req, res) => {
   }
 });
 
+app.put("/api/kilometers/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { kilometers, validated } = req.body;
+
+    const entry = await prisma.kilometerEntry.update({
+      where: { id },
+      data: {
+        kilometers: kilometers ? parseFloat(kilometers) : undefined,
+        validated: validated !== undefined ? validated : undefined
+      },
+      include: { participant: true }
+    });
+
+    res.json(entry);
+  } catch (error) {
+    console.error("Error updating kilometer entry:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/api/kilometers/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.kilometerEntry.delete({
+      where: { id }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting kilometer entry:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/kilometers/:id/validate", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const entry = await prisma.kilometerEntry.update({
+      where: { id },
+      data: { validated: true },
+      include: { participant: true }
+    });
+
+    res.json(entry);
+  } catch (error) {
+    console.error("Error validating entry:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/kilometers/validate-all", async (req, res) => {
+  try {
+    const result = await prisma.kilometerEntry.updateMany({
+      where: { validated: false },
+      data: { validated: true }
+    });
+
+    res.json({ success: true, count: result.count });
+  } catch (error) {
+    console.error("Error validating all entries:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============ EVENTS API ============
 
 app.get("/api/events", async (req, res) => {
@@ -277,6 +397,33 @@ app.post("/api/events", async (req, res) => {
     res.json(event);
   } catch (error) {
     console.error("Error creating event:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put("/api/events/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const event = await prisma.event.update({
+      where: { id },
+      data: req.body
+    });
+    res.json(event);
+  } catch (error) {
+    console.error("Error updating event:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/api/events/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.event.delete({
+      where: { id }
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting event:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -340,6 +487,33 @@ app.post("/api/photos", async (req, res) => {
   }
 });
 
+app.post("/api/photos/:id/approve", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const photo = await prisma.photo.update({
+      where: { id },
+      data: { approved: true }
+    });
+    res.json(photo);
+  } catch (error) {
+    console.error("Error approving photo:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/api/photos/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.photo.delete({
+      where: { id }
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting photo:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============ ROWING CARE CUP API ============
 
 app.post("/api/rowing-care-cup", async (req, res) => {
@@ -350,6 +524,33 @@ app.post("/api/rowing-care-cup", async (req, res) => {
     res.json(registration);
   } catch (error) {
     console.error("Error creating registration:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/rowing-care-cup", async (req, res) => {
+  try {
+    const registrations = await prisma.rowingCareCupRegistration.findMany({
+      include: { participant: true },
+      orderBy: { createdAt: "desc" }
+    });
+    res.json(registrations);
+  } catch (error) {
+    console.error("Error fetching registrations:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/rowing-care-cup/:id/mark-paid", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const registration = await prisma.rowingCareCupRegistration.update({
+      where: { id },
+      data: { paid: true }
+    });
+    res.json(registration);
+  } catch (error) {
+    console.error("Error marking as paid:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -369,6 +570,45 @@ app.get("/api/rowing-care-cup/stats", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching rowing stats:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/clubs", async (req, res) => {
+  try {
+    const club = await prisma.club.create({
+      data: req.body
+    });
+    res.json(club);
+  } catch (error) {
+    console.error("Error creating club:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put("/api/clubs/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const club = await prisma.club.update({
+      where: { id },
+      data: req.body
+    });
+    res.json(club);
+  } catch (error) {
+    console.error("Error updating club:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/api/clubs/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.club.delete({
+      where: { id }
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting club:", error);
     res.status(500).json({ error: error.message });
   }
 });

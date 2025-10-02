@@ -30,7 +30,9 @@ const ClubsManager = () => {
   const fetchClubs = async () => {
     setLoading(true);
     try {
-      setClubs([]);
+      const response = await fetch('/api/clubs');
+      const data = await response.json();
+      setClubs(data);
     } catch (error) {
       console.error('Error fetching clubs:', error);
     } finally {
@@ -41,11 +43,17 @@ const ClubsManager = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editingClub) {
-        console.log('Updating club:', editingClub.id, formData);
-      } else {
-        console.log('Creating club:', formData);
-      }
+      const url = editingClub ? `/api/clubs/${editingClub.id}` : '/api/clubs';
+      const method = editingClub ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de l\'enregistrement');
+
       setShowForm(false);
       setEditingClub(null);
       resetForm();
@@ -71,7 +79,12 @@ const ClubsManager = () => {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Supprimer le club "${name}" ?`)) return;
     try {
-      console.log('Deleting club:', id);
+      const response = await fetch(`/api/clubs/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la suppression');
+
       fetchClubs();
     } catch (error) {
       console.error('Error deleting club:', error);

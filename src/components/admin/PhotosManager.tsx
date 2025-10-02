@@ -13,7 +13,17 @@ const PhotosManager = () => {
   const fetchPhotos = async () => {
     setLoading(true);
     try {
-      setPhotos([]);
+      const response = await fetch('/api/photos');
+      const data = await response.json();
+
+      let filtered = data;
+      if (filter === 'approved') {
+        filtered = data.filter((p: any) => p.approved);
+      } else if (filter === 'pending') {
+        filtered = data.filter((p: any) => !p.approved);
+      }
+
+      setPhotos(filtered);
     } catch (error) {
       console.error('Error fetching photos:', error);
     } finally {
@@ -23,7 +33,12 @@ const PhotosManager = () => {
 
   const handleApprove = async (id: string) => {
     try {
-      console.log('Approving photo:', id);
+      const response = await fetch(`/api/photos/${id}/approve`, {
+        method: 'POST'
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de l\'approbation');
+
       fetchPhotos();
     } catch (error) {
       console.error('Error approving photo:', error);
@@ -33,7 +48,12 @@ const PhotosManager = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer cette photo ?')) return;
     try {
-      console.log('Deleting photo:', id);
+      const response = await fetch(`/api/photos/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la suppression');
+
       fetchPhotos();
     } catch (error) {
       console.error('Error deleting photo:', error);
