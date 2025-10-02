@@ -118,28 +118,40 @@ const KilometerForm: React.FC<KilometerFormProps> = ({ onClose, onSubmit, user }
 
     setIsSubmitting(true);
     try {
-      const participant = await participantAPI.create({
+      const submitData = {
+        typeParticipant: participantType === 'individual' ? 'individual' : 'structure',
         firstName: participantData.firstName,
         lastName: participantData.lastName,
         email: participantData.email,
-        club: participantData.organizationName || undefined
+        structureName: participantData.organizationName,
+        pays: participantData.city,
+        date: formData.date,
+        activityType: formData.activityType,
+        kilometers: formData.kilometers,
+        duration: formData.duration,
+        location: formData.location,
+        participantCount: formData.participantCount.toString(),
+        description: formData.description,
+        photoUrl: formData.photoPreview
+      };
+
+      const response = await fetch('/api/defi-rose/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData)
       });
 
-      const entry = await kilometerAPI.create({
-        participantId: participant.id,
-        date: new Date(formData.date),
-        activityType: formData.activityType.toUpperCase() as 'INDOOR' | 'OUTDOOR' | 'AVIFIT',
-        kilometers: parseFloat(formData.kilometers),
-        duration: formData.duration || undefined,
-        location: formData.location || undefined,
-        participationType: formData.participationType.toUpperCase() as 'INDIVIDUAL' | 'COLLECTIVE',
-        participantCount: formData.participantCount,
-        description: formData.description || undefined,
-        photoUrl: formData.photoPreview || undefined
-      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erreur lors de la soumission');
+      }
 
       alert('Kilomètres enregistrés avec succès !');
-      onSubmit(entry);
+      onSubmit(result);
+      onClose();
     } catch (error) {
       console.error('Error submitting kilometers:', error);
       alert('Erreur lors de l\'enregistrement: ' + (error as Error).message);
