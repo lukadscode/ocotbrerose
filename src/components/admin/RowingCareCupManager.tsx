@@ -81,6 +81,3 @@ const RowingCareCupManager = () => {
 };
 
 export default RowingCareCupManager;
-
-
-export default RowingCareCupManager
