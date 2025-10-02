@@ -12,13 +12,16 @@ datasource db {
 }
 
 model Participant {
-  id        String   @id @default(cuid())
-  firstName String
-  lastName  String
-  email     String   @unique
-  club      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(cuid())
+  firstName         String   @map("first_name")
+  lastName          String   @map("last_name")
+  email             String   @unique
+  club              String?
+  participantType   ParticipantType @default(INDIVIDUAL) @map("participant_type")
+  organizationName  String?  @map("organization_name")
+  city              String?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   // Relations
   kilometerEntries     KilometerEntry[]
@@ -29,23 +32,23 @@ model Participant {
 }
 
 model KilometerEntry {
-  id               String   @id @default(cuid())
-  participantId    String
-  date             DateTime
-  activityType     ActivityType
-  kilometers       Float
-  duration         String?
-  location         String?
-  participationType ParticipationType @default(INDIVIDUAL)
-  participantCount Int      @default(1)
-  description      String?  @db.Text
-  photoUrl         String?
-  validated        Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                String   @id @default(cuid())
+  participantId     String   @map("participant_id")
+  date              DateTime
+  activityType      ActivityType @map("activity_type")
+  kilometers        Float
+  duration          String?
+  location          String?
+  participationType ParticipationType @default(INDIVIDUAL) @map("participation_type")
+  participantCount  Int      @default(1) @map("participant_count")
+  description       String?  @db.Text
+  photoUrl          String?  @map("photo_url")
+  validated         Boolean  @default(false)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   // Relations
-  participant      Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  participant       Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
 
   @@map("kilometer_entries")
 }
@@ -146,6 +149,12 @@ enum ActivityType {
 enum ParticipationType {
   INDIVIDUAL
   COLLECTIVE
+}
+
+enum ParticipantType {
+  INDIVIDUAL
+  CLUB
+  KINE_CABINET
 }
 
 enum EventStatus {

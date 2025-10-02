@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Target, Users, MapPin, TrendingUp, Globe } from 'lucide-react';
-import { supabaseService } from '../lib/supabase';
+import { participantAPI, kilometerAPI, clubAPI } from '../lib/api';
 
 const StatsCounter = () => {
   const [stats, setStats] = useState({
@@ -16,12 +16,18 @@ const StatsCounter = () => {
     try {
       setError(null);
 
-      const data = await supabaseService.getStats();
+      const [participantStats, kilometerEntries, clubs] = await Promise.all([
+        participantAPI.getStats(),
+        kilometerAPI.getValidated(),
+        clubAPI.getAll()
+      ]);
+
+      const totalKilometers = kilometerEntries.reduce((sum: number, entry: any) => sum + entry.kilometers, 0);
 
       setStats({
-        kmParcourus: data.totalKilometers,
-        participants: data.totalParticipants,
-        clubs: data.totalClubs,
+        kmParcourus: Math.round(totalKilometers * 10) / 10,
+        participants: participantStats.totalParticipants,
+        clubs: clubs.length,
         countries: 1
       });
     } catch (error) {

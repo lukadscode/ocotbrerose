@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { Target, Calendar, MapPin, Camera, X, Check, Clock, Users, Building2, User, ChevronRight, ChevronLeft } from 'lucide-react';
-import { supabaseService, type ParticipantType, type ActivityType, type ParticipationType } from '../lib/supabase';
+import { participantAPI, kilometerAPI } from '../lib/api';
+
+type ParticipantType = 'individual' | 'club' | 'kine_cabinet';
+type ActivityType = 'indoor' | 'outdoor' | 'avifit';
+type ParticipationType = 'individual' | 'collective';
 
 interface KilometerFormProps {
   onClose: () => void;
@@ -114,30 +118,24 @@ const KilometerForm: React.FC<KilometerFormProps> = ({ onClose, onSubmit, user }
 
     setIsSubmitting(true);
     try {
-      let participant = await supabaseService.getParticipantByEmail(participantData.email);
+      const participant = await participantAPI.create({
+        firstName: participantData.firstName,
+        lastName: participantData.lastName,
+        email: participantData.email,
+        club: participantData.organizationName || undefined
+      });
 
-      if (!participant) {
-        participant = await supabaseService.createParticipant({
-          first_name: participantData.firstName,
-          last_name: participantData.lastName,
-          email: participantData.email,
-          participant_type: participantType,
-          organization_name: participantData.organizationName || undefined,
-          city: participantData.city || undefined
-        });
-      }
-
-      const entry = await supabaseService.createKilometerEntry({
-        participant_id: participant.id,
-        date: formData.date,
-        activity_type: formData.activityType,
+      const entry = await kilometerAPI.create({
+        participantId: participant.id,
+        date: new Date(formData.date),
+        activityType: formData.activityType.toUpperCase() as 'INDOOR' | 'OUTDOOR' | 'AVIFIT',
         kilometers: parseFloat(formData.kilometers),
         duration: formData.duration || undefined,
         location: formData.location || undefined,
-        participation_type: formData.participationType,
-        participant_count: formData.participantCount,
+        participationType: formData.participationType.toUpperCase() as 'INDIVIDUAL' | 'COLLECTIVE',
+        participantCount: formData.participantCount,
         description: formData.description || undefined,
-        photo_url: formData.photoPreview || undefined
+        photoUrl: formData.photoPreview || undefined
       });
 
       alert('Kilomètres enregistrés avec succès !');
