@@ -326,7 +326,10 @@ const DefiRose = () => {
       {showDefiForm && (
         <SimpleDefiForm
           onClose={() => setShowDefiForm(false)}
-          onSubmit={() => setShowDefiForm(false)}
+          onSubmit={() => {
+            setShowDefiForm(false);
+            window.location.reload();
+          }}
         />
       )}
     </div>

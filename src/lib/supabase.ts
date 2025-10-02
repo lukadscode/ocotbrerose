@@ -98,5 +98,35 @@ export const supabaseService = {
 
     if (error) throw error;
     return participant;
+  },
+
+  async getStats() {
+    const { data: participants, error: participantsError } = await supabase
+      .from('participants')
+      .select('*');
+
+    if (participantsError) throw participantsError;
+
+    const { data: entries, error: entriesError } = await supabase
+      .from('kilometer_entries')
+      .select('*')
+      .eq('validated', true);
+
+    if (entriesError) throw entriesError;
+
+    const totalKilometers = entries?.reduce((sum, entry) => sum + Number(entry.kilometers), 0) || 0;
+
+    const uniqueOrganizations = new Set(
+      participants
+        ?.filter(p => p.organization_name)
+        .map(p => p.organization_name)
+    );
+
+    return {
+      totalParticipants: participants?.length || 0,
+      totalKilometers: Math.round(totalKilometers * 10) / 10,
+      totalClubs: uniqueOrganizations.size,
+      entries: entries || []
+    };
   }
 };

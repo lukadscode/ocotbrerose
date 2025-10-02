@@ -1,61 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Users, MapPin, Euro, TrendingUp } from 'lucide-react';
-import { participantAPI, kilometerAPI, clubAPI } from '../lib/api';
+import { Target, Users, MapPin, TrendingUp, Globe } from 'lucide-react';
+import { supabaseService } from '../lib/supabase';
 
 const StatsCounter = () => {
   const [stats, setStats] = useState({
     kmParcourus: 0,
     participants: 0,
     clubs: 0,
-    montantRecolte: 0
+    countries: 1
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStats = async () => {
+    try {
+      setError(null);
+
+      const data = await supabaseService.getStats();
+
+      setStats({
+        kmParcourus: data.totalKilometers,
+        participants: data.totalParticipants,
+        clubs: data.totalClubs,
+        countries: 1
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      setError('Erreur lors du chargement des statistiques');
+      setStats({
+        kmParcourus: 0,
+        participants: 0,
+        clubs: 0,
+        countries: 1
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setError(null);
-        
-        // Récupérer les vraies statistiques depuis la base de données
-        const [participantStats, kilometerEntries, clubs] = await Promise.all([
-          participantAPI.getStats(),
-          kilometerAPI.getValidated(),
-          clubAPI.getAll()
-        ]);
-
-        // Calculer les kilomètres totaux
-        const totalKilometers = kilometerEntries.reduce((sum, entry) => sum + entry.kilometers, 0);
-        
-        // Calculer le montant récolté (estimation basée sur les participants)
-        const estimatedAmount = participantStats.totalParticipants * 15; // Moyenne 15€ par participant
-
-        setStats({
-          kmParcourus: Math.round(totalKilometers * 10) / 10, // Arrondi à 1 décimale
-          participants: participantStats.totalParticipants,
-          clubs: clubs.length,
-          montantRecolte: estimatedAmount
-        });
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-        setError('Erreur lors du chargement des statistiques');
-        // Valeurs par défaut en cas d'erreur
-        setStats({
-          kmParcourus: 0,
-          participants: 0,
-          clubs: 0,
-          montantRecolte: 0
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStats();
-    
-    // Actualiser les stats toutes les 30 secondes
+
     const interval = setInterval(fetchStats, 30000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -87,12 +74,11 @@ const StatsCounter = () => {
 
   return (
     <div className="bg-white rounded-2xl shadow-xl p-8">
-      {/* Barre de progression principale */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-2xl font-bold text-gray-900">Progression du Défi</h3>
           <span className="text-3xl font-bold text-pink-600">
-            {stats.kmParcourus.toLocaleString()} km
+            {stats.kmParcourus.toLocaleString('fr-FR')} km
           </span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-6 mb-2">
@@ -114,14 +100,13 @@ const StatsCounter = () => {
         </div>
       </div>
 
-      {/* Statistiques détaillées */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="text-center p-6 bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl">
           <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <Target className="w-6 h-6 text-white" />
           </div>
           <div className="text-3xl font-bold text-gray-900 mb-1">
-            {stats.kmParcourus.toLocaleString()}
+            {stats.kmParcourus.toLocaleString('fr-FR')}
           </div>
           <div className="text-sm text-gray-600 font-medium">Kilomètres parcourus</div>
           {stats.kmParcourus > 0 && (
@@ -132,12 +117,12 @@ const StatsCounter = () => {
           )}
         </div>
 
-        <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-sky-50 rounded-xl">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-sky-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <Users className="w-6 h-6 text-white" />
           </div>
           <div className="text-3xl font-bold text-gray-900 mb-1">
-            {stats.participants.toLocaleString()}
+            {stats.participants.toLocaleString('fr-FR')}
           </div>
           <div className="text-sm text-gray-600 font-medium">Participants</div>
           {stats.participants > 0 && (
@@ -148,8 +133,8 @@ const StatsCounter = () => {
           )}
         </div>
 
-        <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl">
-          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-600 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="text-center p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl">
+          <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <MapPin className="w-6 h-6 text-white" />
           </div>
           <div className="text-3xl font-bold text-gray-900 mb-1">
@@ -166,25 +151,25 @@ const StatsCounter = () => {
 
         <div className="text-center p-6 bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl">
           <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Euro className="w-6 h-6 text-white" />
+            <Globe className="w-6 h-6 text-white" />
           </div>
           <div className="text-3xl font-bold text-gray-900 mb-1">
-            {stats.montantRecolte.toLocaleString()}
+            {stats.countries}
           </div>
           <div className="text-sm text-gray-600 font-medium">Pays Participants</div>
           <div className="flex items-center justify-center mt-2 text-blue-600">
             <TrendingUp className="w-4 h-4 mr-1" />
+            <span className="text-xs">France</span>
           </div>
         </div>
       </div>
 
-      {/* Message motivationnel */}
       <div className="mt-8 p-6 bg-gradient-to-r from-pink-100 to-rose-100 rounded-xl text-center">
         {stats.kmParcourus > 0 ? (
           <>
             <p className="text-lg font-semibold text-gray-800 mb-2">
               🎯 Plus que <span className="text-pink-600 font-bold">
-                {(27000 - stats.kmParcourus).toLocaleString()} km
+                {(27000 - stats.kmParcourus).toLocaleString('fr-FR')} km
               </span> pour atteindre notre objectif !
             </p>
             <p className="text-gray-600">
