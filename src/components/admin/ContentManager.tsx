@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Plus, Edit2, Save, X, Settings } from 'lucide-react';
+import { FileText, Plus, CreditCard as Edit2, Save, X, Settings } from 'lucide-react';
 
 interface SiteContent {
   id: string;

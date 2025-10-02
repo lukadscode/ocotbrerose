@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Calendar, X } from 'lucide-react';
+import { Plus, CreditCard as Edit2, Trash2, Calendar, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Event {

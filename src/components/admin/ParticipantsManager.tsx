@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Edit2, Trash2, ChevronLeft, ChevronRight, Mail, User } from 'lucide-react';
+import { Search, CreditCard as Edit2, Trash2, ChevronLeft, ChevronRight, Mail, User } from 'lucide-react';
 
 interface Participant {
   id: string;

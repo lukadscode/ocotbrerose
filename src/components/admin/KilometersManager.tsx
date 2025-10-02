@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Edit2, Trash2, CheckCircle, XCircle, ChevronLeft, ChevronRight, Filter, Target } from 'lucide-react';
+import { Search, CreditCard as Edit2, Trash2, CheckCircle, XCircle, ChevronLeft, ChevronRight, Filter, Target } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface KilometerEntry {
