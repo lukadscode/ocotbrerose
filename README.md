@@ -251,7 +251,7 @@ Le fichier `ecosystem.config.cjs` doit exister à la racine :
 ```javascript
 module.exports = {
   apps: [{
-    name: 'octobre-rose',
+    name: 'octobre-rose-2025',
     script: 'server.js',
     cwd: '/var/www/octobre-rose',
     instances: 1,
@@ -260,16 +260,24 @@ module.exports = {
     max_memory_restart: '1G',
     env: {
       NODE_ENV: 'production',
-      PORT: 3000
-    }
+      PORT: 3003
+    },
+    error_file: './logs/pm2-error.log',
+    out_file: './logs/pm2-out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
   }]
 };
 ```
+
+**⚠️ IMPORTANT** : L'application tourne sur le **port 3003** (pas 4173, pas 3000)
 
 ### 2. Démarrer l'application avec PM2
 
 ```bash
 cd /var/www/octobre-rose
+
+# Créer le dossier logs
+mkdir -p logs
 
 # Démarrer l'application
 pm2 start ecosystem.config.cjs
@@ -278,7 +286,7 @@ pm2 start ecosystem.config.cjs
 pm2 status
 
 # Voir les logs
-pm2 logs octobre-rose
+pm2 logs octobre-rose-2025
 
 # Sauvegarder la configuration PM2
 pm2 save
@@ -288,19 +296,22 @@ pm2 save
 
 ```bash
 # Redémarrer l'application
-pm2 restart octobre-rose
+pm2 restart octobre-rose-2025
 
 # Arrêter l'application
-pm2 stop octobre-rose
+pm2 stop octobre-rose-2025
 
 # Voir les logs en temps réel
-pm2 logs octobre-rose --lines 100
+pm2 logs octobre-rose-2025 --lines 100
 
 # Supprimer du PM2
-pm2 delete octobre-rose
+pm2 delete octobre-rose-2025
 
 # Monitorer les ressources
 pm2 monit
+
+# Vérifier que le port 3003 est utilisé
+sudo netstat -tlnp | grep 3003
 ```
 
 ---
@@ -325,10 +336,15 @@ sudo nano /etc/apache2/sites-available/octobre-rose.conf
     ErrorLog ${APACHE_LOG_DIR}/octobre-rose-error.log
     CustomLog ${APACHE_LOG_DIR}/octobre-rose-access.log combined
 
-    # Reverse proxy vers l'application Node.js (PM2)
+    # Reverse proxy vers l'application Node.js (PM2) - PORT 3003
     ProxyPreserveHost On
-    ProxyPass / http://localhost:3000/
-    ProxyPassReverse / http://localhost:3000/
+    ProxyPass / http://127.0.0.1:3003/
+    ProxyPassReverse / http://127.0.0.1:3003/
+
+    # Support WebSocket (optionnel)
+    RewriteEngine On
+    RewriteCond %{HTTP:Upgrade} =websocket [NC]
+    RewriteRule /(.*) ws://127.0.0.1:3003/$1 [P,L]
 
     # Headers de sécurité
     Header always set X-Content-Type-Options "nosniff"
@@ -336,6 +352,8 @@ sudo nano /etc/apache2/sites-available/octobre-rose.conf
     Header always set X-XSS-Protection "1; mode=block"
 </VirtualHost>
 ```
+
+**⚠️ IMPORTANT** : Le proxy doit pointer vers le **port 3003** (pas 4173)
 
 ### 2. Activer le site
 
@@ -386,10 +404,45 @@ sudo certbot renew --dry-run
 
 ### 4. Configuration HTTPS finale
 
-Certbot crée automatiquement un fichier `/etc/apache2/sites-available/octobre-rose-le-ssl.conf`. Vérifiez-le :
+Certbot crée automatiquement un fichier `/etc/apache2/sites-available/octobre-rose-le-ssl.conf`.
+
+**⚠️ IMPORTANT** : Vérifiez que le fichier SSL utilise le **port 3003** :
 
 ```bash
 sudo nano /etc/apache2/sites-available/octobre-rose-le-ssl.conf
+```
+
+Le fichier doit contenir :
+```apache
+<IfModule mod_ssl.c>
+<VirtualHost *:443>
+    ServerName octobrerose.ffaviron.fr
+    ServerAlias www.octobrerose.ffaviron.fr
+
+    # Proxy vers Node.js (PM2 => port 3003)
+    ProxyPreserveHost On
+    ProxyPass        /  http://127.0.0.1:3003/
+    ProxyPassReverse /  http://127.0.0.1:3003/
+
+    # Support WebSocket
+    RewriteEngine On
+    RewriteCond %{HTTP:Upgrade} =websocket [NC]
+    RewriteRule /(.*) ws://127.0.0.1:3003/$1 [P,L]
+
+    ErrorLog ${APACHE_LOG_DIR}/octobrerose_error.log
+    CustomLog ${APACHE_LOG_DIR}/octobrerose_access.log combined
+
+    # SSL Let's Encrypt
+    Include /etc/letsencrypt/options-ssl-apache.conf
+    SSLCertificateFile /etc/letsencrypt/live/octobrerose.ffaviron.fr/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/octobrerose.ffaviron.fr/privkey.pem
+</VirtualHost>
+</IfModule>
+```
+
+Si les ports sont incorrects (4173 au lieu de 3003), modifiez-les et rechargez Apache :
+```bash
+sudo systemctl reload apache2
 ```
 
 ---
@@ -509,10 +562,13 @@ npm run db:push
 npm run build
 
 # 7. Redémarrer l'application
-pm2 restart octobre-rose
+pm2 restart octobre-rose-2025
 
 # 8. Vérifier les logs
-pm2 logs octobre-rose --lines 50
+pm2 logs octobre-rose-2025 --lines 50
+
+# 9. Vérifier que le port 3003 est actif
+sudo netstat -tlnp | grep 3003
 ```
 
 ---
@@ -604,13 +660,20 @@ sudo crontab -e
 
 ```bash
 # Vérifier les logs PM2
-pm2 logs octobre-rose --lines 100
+pm2 logs octobre-rose-2025 --lines 100
 
-# Vérifier que le port 3000 n'est pas utilisé
-sudo lsof -i :3000
+# Vérifier que le port 3003 n'est pas utilisé par un autre processus
+sudo lsof -i :3003
+
+# Vérifier le statut PM2
+pm2 status
 
 # Redémarrer l'application
-pm2 restart octobre-rose
+pm2 restart octobre-rose-2025
+
+# Si l'application n'est pas dans PM2, la démarrer
+pm2 start ecosystem.config.cjs
+pm2 save
 ```
 
 ### Erreur de connexion à la base de données
@@ -644,10 +707,18 @@ sudo systemctl restart apache2
 ```bash
 # L'application PM2 ne répond pas
 pm2 status
-pm2 restart octobre-rose
+pm2 restart octobre-rose-2025
 
 # Vérifier les logs
-pm2 logs octobre-rose
+pm2 logs octobre-rose-2025
+
+# Vérifier qu'Apache proxy vers le bon port (3003)
+sudo cat /etc/apache2/sites-available/*-le-ssl.conf | grep ProxyPass
+
+# Si le port est incorrect (4173), le corriger
+sudo nano /etc/apache2/sites-available/octobrerose.ffaviron.fr-le-ssl.conf
+# Remplacer 4173 par 3003
+sudo systemctl reload apache2
 ```
 
 ### SSL ne fonctionne pas
@@ -703,16 +774,19 @@ npm run db:reset
 pm2 list
 
 # Logs en temps réel
-pm2 logs octobre-rose
+pm2 logs octobre-rose-2025
 
 # Monitorer les ressources
 pm2 monit
 
 # Redémarrer après modification
-pm2 restart octobre-rose
+pm2 restart octobre-rose-2025
 
 # Sauvegarder la configuration
 pm2 save
+
+# Vérifier que l'app écoute sur le port 3003
+sudo netstat -tlnp | grep 3003
 ```
 
 ### Apache
@@ -836,11 +910,12 @@ sudo systemctl restart mariadb
 
 | Problème | Solution |
 |----------|----------|
-| Port 3000 déjà utilisé | `pm2 restart octobre-rose` |
+| Port 3003 déjà utilisé | `pm2 restart octobre-rose-2025` |
 | Erreur de connexion BDD | Vérifier DATABASE_URL dans .env |
-| 502 Bad Gateway | Vérifier que PM2 tourne : `pm2 status` |
+| 502 Bad Gateway | Vérifier PM2 : `pm2 status` et Apache port : `grep 3003 /etc/apache2/sites-available/*ssl.conf` |
 | SSL invalide | `sudo certbot renew` |
 | Application lente | Vérifier les ressources : `pm2 monit` |
+| curl localhost:3003 échoue | PM2 n'est pas démarré : `pm2 start ecosystem.config.cjs` |
 
 ---
 
