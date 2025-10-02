@@ -114,14 +114,13 @@ app.post("/api/kilometers", async (req, res) => {
         participantCount: parseInt(participantCount),
         description,
         photoUrl,
-        validated: false // En attente de validation par défaut
+        validated: false
       },
       include: {
         participant: true
       }
     });
 
-    // Mettre à jour les stats du club si nécessaire
     if (location) {
       await prisma.club.updateMany({
         where: { name: location },
@@ -137,6 +136,80 @@ app.post("/api/kilometers", async (req, res) => {
   } catch (error) {
     console.error("Error creating kilometer entry:", error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/defi-rose/submit", async (req, res) => {
+  try {
+    const {
+      typeParticipant,
+      firstName,
+      lastName,
+      email,
+      structureName,
+      structureEmail,
+      pays,
+      kilometers,
+      date,
+      activityType,
+      duration,
+      location,
+      description,
+      participantCount,
+      photoUrl
+    } = req.body;
+
+    const finalEmail = typeParticipant === 'individual' ? email : structureEmail;
+    const finalFirstName = typeParticipant === 'individual' ? firstName : structureName;
+    const finalLastName = typeParticipant === 'individual' ? lastName : '';
+
+    let participant = await prisma.participant.findUnique({
+      where: { email: finalEmail }
+    });
+
+    if (!participant) {
+      participant = await prisma.participant.create({
+        data: {
+          firstName: finalFirstName,
+          lastName: finalLastName,
+          email: finalEmail,
+          participantType: typeParticipant === 'structure' ? 'CLUB' : 'INDIVIDUAL',
+          organizationName: typeParticipant === 'structure' ? structureName : null,
+          city: pays || null
+        }
+      });
+    }
+
+    const entry = await prisma.kilometerEntry.create({
+      data: {
+        participantId: participant.id,
+        date: new Date(date),
+        activityType: activityType ? activityType.toUpperCase() : 'INDOOR',
+        kilometers: parseFloat(kilometers),
+        duration: duration || null,
+        location: location || pays || null,
+        participationType: typeParticipant === 'structure' ? 'COLLECTIVE' : 'INDIVIDUAL',
+        participantCount: typeParticipant === 'structure' ? parseInt(participantCount) || 1 : 1,
+        description: description || null,
+        photoUrl: photoUrl || null,
+        validated: false
+      },
+      include: {
+        participant: true
+      }
+    });
+
+    res.json({
+      success: true,
+      entry,
+      participant
+    });
+  } catch (error) {
+    console.error("Error submitting Défi Rose entry:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 
