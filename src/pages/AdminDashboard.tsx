@@ -1,56 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { useAdminAuthContext } from '../components/AdminAuthProvider';
-import { 
-  Users, 
-  Target, 
-  MapPin, 
-  Euro, 
-  TrendingUp, 
-  Calendar,
-  Camera,
-  Trophy,
-  BarChart3,
+import {
+  Users,
+  Target,
+  MapPin,
   Settings,
   LogOut,
-  CheckCircle,
-  XCircle,
-  Clock
+  BarChart3,
+  FileText,
+  Calendar,
+  Camera,
+  Trophy
 } from 'lucide-react';
+import ParticipantsManager from '../components/admin/ParticipantsManager';
+import KilometersManager from '../components/admin/KilometersManager';
+import EventsManager from '../components/admin/EventsManager';
+import RowingCareCupManager from '../components/admin/RowingCareCupManager';
+import PhotosManager from '../components/admin/PhotosManager';
+import ClubsManager from '../components/admin/ClubsManager';
+import ContentManager from '../components/admin/ContentManager';
+import { adminAPI } from '../lib/api';
+
+type Tab = 'dashboard' | 'participants' | 'kilometers' | 'events' | 'rowing-care-cup' | 'photos' | 'clubs' | 'content';
 
 const AdminDashboard = () => {
   const { admin, logout } = useAdminAuthContext();
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [stats, setStats] = useState({
     totalParticipants: 0,
     totalKilometers: 0,
     totalClubs: 0,
     totalEvents: 0,
     pendingPhotos: 0,
-    recentEntries: 0
+    pendingEntries: 0,
+    rowingRegistrations: 0
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simuler le chargement des statistiques
-    const fetchStats = async () => {
-      try {
-        // Données de démonstration
-        setStats({
-          totalParticipants: 127,
-          totalKilometers: 8450.5,
-          totalClubs: 23,
-          totalEvents: 6,
-          pendingPhotos: 3,
-          recentEntries: 15
-        });
-      } catch (error) {
-        console.error('Error fetching admin stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStats();
   }, []);
+
+  const fetchStats = async () => {
+    try {
+      const data = await adminAPI.getDashboardStats();
+      setStats(data);
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const tabs = [
+    { id: 'dashboard' as Tab, label: 'Tableau de bord', icon: BarChart3 },
+    { id: 'participants' as Tab, label: 'Participants', icon: Users },
+    { id: 'kilometers' as Tab, label: 'Kilomètres', icon: Target },
+    { id: 'events' as Tab, label: 'Événements', icon: Calendar },
+    { id: 'rowing-care-cup' as Tab, label: 'Rowing Care Cup', icon: Trophy },
+    { id: 'photos' as Tab, label: 'Photos', icon: Camera },
+    { id: 'clubs' as Tab, label: 'Clubs', icon: MapPin },
+    { id: 'content' as Tab, label: 'Contenu du site', icon: FileText }
+  ];
 
   if (loading) {
     return (
@@ -65,7 +76,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Admin */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
@@ -78,7 +88,7 @@ const AdminDashboard = () => {
                 <p className="text-sm text-gray-600">Octobre Rose 2025 x FFAviron</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-900">{admin?.name}</p>
@@ -97,179 +107,127 @@ const AdminDashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Statistiques principales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Participants</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalParticipants}</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-green-600">+12% ce mois</span>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Kilomètres</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalKilometers.toLocaleString()}</p>
-              </div>
-              <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
-                <Target className="w-6 h-6 text-pink-600" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-green-600">+8% cette semaine</span>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Clubs</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalClubs}</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <MapPin className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-green-600">+3 nouveaux</span>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Événements</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalEvents}</p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm">
-              <Clock className="w-4 h-4 text-blue-500 mr-1" />
-              <span className="text-blue-600">2 à venir</span>
-            </div>
+        <div className="mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8 overflow-x-auto">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`
+                      flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap
+                      ${activeTab === tab.id
+                        ? 'border-pink-500 text-pink-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }
+                    `}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Actions rapides */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h3>
-            <div className="space-y-3">
-              <button className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="flex items-center space-x-3">
-                  <Camera className="w-5 h-5 text-orange-600" />
-                  <span className="font-medium">Photos en attente</span>
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Users className="w-6 h-6 text-blue-600" />
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-                    {stats.pendingPhotos}
-                  </span>
-                  <span className="text-gray-400">→</span>
-                </div>
-              </button>
-
-              <button className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="flex items-center space-x-3">
-                  <Target className="w-5 h-5 text-blue-600" />
-                  <span className="font-medium">Kilomètres récents</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                    {stats.recentEntries}
-                  </span>
-                  <span className="text-gray-400">→</span>
-                </div>
-              </button>
-
-              <button className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="flex items-center space-x-3">
-                  <Trophy className="w-5 h-5 text-yellow-600" />
-                  <span className="font-medium">Rowing Care Cup</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
-                    Gérer
-                  </span>
-                  <span className="text-gray-400">→</span>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Progression du défi */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Progression du Défi</h3>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-600">Objectif 27 000 km</span>
-                  <span className="text-sm font-bold text-pink-600">
-                    {((stats.totalKilometers / 27000) * 100).toFixed(1)}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className="bg-gradient-to-r from-pink-500 to-rose-600 h-3 rounded-full transition-all duration-1000"
-                    style={{ width: `${Math.min((stats.totalKilometers / 27000) * 100, 100)}%` }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {(27000 - stats.totalKilometers).toLocaleString()} km restants
-                </p>
+                <h3 className="text-2xl font-bold text-gray-900">{stats.totalParticipants}</h3>
+                <p className="text-sm text-gray-600">Participants</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">31</div>
-                  <div className="text-xs text-gray-600">Jours restants</div>
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center">
+                    <Target className="w-6 h-6 text-pink-600" />
+                  </div>
                 </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">27</div>
-                  <div className="text-xs text-gray-600">Capitales</div>
+                <h3 className="text-2xl font-bold text-gray-900">{stats.totalKilometers.toFixed(1)}</h3>
+                <p className="text-sm text-gray-600">Kilomètres validés</p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <MapPin className="w-6 h-6 text-amber-600" />
+                  </div>
                 </div>
+                <h3 className="text-2xl font-bold text-gray-900">{stats.totalClubs}</h3>
+                <p className="text-sm text-gray-600">Clubs</p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Trophy className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">{stats.rowingRegistrations}</h3>
+                <p className="text-sm text-gray-600">Inscriptions Rowing Care Cup</p>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Activité récente */}
-        <div className="mt-8 bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Activité récente</h3>
-          <div className="space-y-4">
-            {[
-              { type: 'participant', message: 'Nouveau participant inscrit', time: 'Il y a 2h', status: 'success' },
-              { type: 'kilometers', message: '15.5 km ajoutés par Marie Dupont', time: 'Il y a 3h', status: 'info' },
-              { type: 'photo', message: 'Photo en attente de validation', time: 'Il y a 4h', status: 'warning' },
-              { type: 'event', message: 'Rowing Care Cup - 5 nouvelles inscriptions', time: 'Il y a 6h', status: 'success' }
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-2 h-2 rounded-full ${
-                    activity.status === 'success' ? 'bg-green-500' :
-                    activity.status === 'warning' ? 'bg-yellow-500' :
-                    'bg-blue-500'
-                  }`}></div>
-                  <span className="text-sm text-gray-900">{activity.message}</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">En attente de validation</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Kilomètres</span>
+                    <span className="text-2xl font-bold text-orange-600">{stats.pendingEntries}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Photos</span>
+                    <span className="text-2xl font-bold text-orange-600">{stats.pendingPhotos}</span>
+                  </div>
                 </div>
-                <span className="text-xs text-gray-500">{activity.time}</span>
               </div>
-            ))}
+
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Événements</h3>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Total</span>
+                  <span className="text-2xl font-bold text-gray-900">{stats.totalEvents}</span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Progression</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Objectif: 27 000 km</span>
+                    <span className="font-semibold text-pink-600">
+                      {((stats.totalKilometers / 27000) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div
+                      className="bg-gradient-to-r from-pink-500 to-rose-600 h-3 rounded-full"
+                      style={{ width: `${Math.min((stats.totalKilometers / 27000) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {activeTab === 'participants' && <ParticipantsManager />}
+        {activeTab === 'kilometers' && <KilometersManager />}
+        {activeTab === 'events' && <EventsManager />}
+        {activeTab === 'rowing-care-cup' && <RowingCareCupManager />}
+        {activeTab === 'photos' && <PhotosManager />}
+        {activeTab === 'clubs' && <ClubsManager />}
+        {activeTab === 'content' && <ContentManager />}
       </div>
     </div>
   );

@@ -206,17 +206,15 @@ export const clubService = {
 };
 
 export const photoService = {
+  async getAll() {
+    return await prisma.photo.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+  },
+
   async getApproved() {
     return await prisma.photo.findMany({
       where: { approved: true },
-      include: {
-        participant: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        }
-      },
       orderBy: { createdAt: 'desc' }
     });
   },
@@ -229,7 +227,7 @@ export const photoService = {
     return await prisma.photo.create({
       data: {
         ...data,
-        approved: true // Auto-approval pour la démo
+        approved: false
       }
     });
   }
@@ -255,8 +253,9 @@ export const rowingCareCupService = {
       _sum: { price: true },
       where: { paid: true }
     });
-    
+
     return {
+      total: totalRegistrations,
       totalRegistrations,
       totalAmount: totalAmount._sum.price || 0
     };

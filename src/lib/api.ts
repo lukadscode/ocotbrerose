@@ -203,6 +203,29 @@ export const clubAPI = {
 // API pour l'admin
 export const adminAPI = {
   async getDashboardStats() {
-    return await adminService.getDashboardStats();
+    const [participants, kilometers, clubs, events, photos, entries, registrations] = await Promise.all([
+      participantService.getAll(),
+      kilometerService.getValidated(),
+      clubService.getAll(),
+      eventService.getAll(),
+      photoService.getApproved(),
+      kilometerService.getAll(),
+      rowingCareCupService.getStats()
+    ]);
+
+    const totalKilometers = kilometers.reduce((sum: number, entry: any) => sum + entry.kilometers, 0);
+    const pendingEntries = entries.filter((e: any) => !e.validated).length;
+    const allPhotos = await photoService.getAll();
+    const pendingPhotos = allPhotos.filter((p: any) => !p.approved).length;
+
+    return {
+      totalParticipants: participants.length,
+      totalKilometers,
+      totalClubs: clubs.length,
+      totalEvents: events.length,
+      pendingPhotos,
+      pendingEntries,
+      rowingRegistrations: registrations.total || 0
+    };
   }
 };

@@ -139,6 +139,20 @@ model Admin {
   @@map("admins")
 }
 
+model SiteContent {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   @db.Text
+  type        ContentType @default(TEXT)
+  category    String
+  label       String
+  description String?  @db.Text
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@map("site_content")
+}
+
 // Enums
 enum ActivityType {
   INDOOR
@@ -167,4 +181,12 @@ enum EventStatus {
 enum AdminRole {
   ADMIN
   SUPER_ADMIN
+}
+
+enum ContentType {
+  TEXT
+  NUMBER
+  HTML
+  JSON
+  IMAGE_URL
 }
