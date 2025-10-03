@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, CheckCircle, Download, Edit2, Save, X } from 'lucide-react';
+import { Trophy, CheckCircle, Download, CreditCard as Edit2, Save, X } from 'lucide-react';
 
 const RowingCareCupManager = () => {
   const [registrations, setRegistrations] = useState([]);
