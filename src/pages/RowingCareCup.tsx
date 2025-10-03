@@ -14,11 +14,32 @@ const RowingCareCup = () => {
   React.useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Données d'exemple directement dans le composant
-        setStats({ totalRegistrations: 1, totalAmount: 5 });
+        const [registrationsResponse, contentResponse] = await Promise.all([
+          fetch('/api/rowing-care-cup'),
+          fetch('/api/site-content/rowing_care_cup_manual_count')
+        ]);
+
+        const registrations = await registrationsResponse.json();
+
+        let manualCount = 0;
+        if (contentResponse.ok) {
+          const content = await contentResponse.json();
+          manualCount = parseInt(content.value) || 0;
+        }
+
+        const totalRegistrations = registrations.length + manualCount;
+        const totalAmount = registrations.reduce((sum: number, reg: any) => {
+          const price = parseFloat(reg.price) || 0;
+          return sum + price;
+        }, 0);
+
+        setStats({
+          totalRegistrations,
+          totalAmount
+        });
       } catch (error) {
         console.error('Error fetching stats:', error);
-        setStats({ totalRegistrations: 1, totalAmount: 5 });
+        setStats({ totalRegistrations: 0, totalAmount: 0 });
       } finally {
         setLoading(false);
       }
