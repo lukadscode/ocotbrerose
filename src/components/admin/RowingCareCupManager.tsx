@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, CheckCircle, Download } from 'lucide-react';
+import { Trophy, CheckCircle, Download, Edit2, Save, X } from 'lucide-react';
 
 const RowingCareCupManager = () => {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [manualCount, setManualCount] = useState<number>(0);
+  const [isEditingCount, setIsEditingCount] = useState(false);
+  const [editCountValue, setEditCountValue] = useState('');
 
   useEffect(() => {
     fetchRegistrations();
@@ -15,6 +18,12 @@ const RowingCareCupManager = () => {
       const response = await fetch('/api/rowing-care-cup');
       const data = await response.json();
       setRegistrations(data);
+
+      const contentResponse = await fetch('/api/site-content/rowing_care_cup_manual_count');
+      if (contentResponse.ok) {
+        const content = await contentResponse.json();
+        setManualCount(parseInt(content.value) || 0);
+      }
     } catch (error) {
       console.error('Error fetching registrations:', error);
     } finally {
@@ -36,20 +45,115 @@ const RowingCareCupManager = () => {
     }
   };
 
+  const handleEditCount = () => {
+    setIsEditingCount(true);
+    setEditCountValue(manualCount.toString());
+  };
+
+  const handleSaveCount = async () => {
+    try {
+      const value = parseInt(editCountValue) || 0;
+
+      const checkResponse = await fetch('/api/site-content/rowing_care_cup_manual_count');
+
+      if (checkResponse.ok) {
+        const response = await fetch('/api/site-content/rowing_care_cup_manual_count', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: value.toString() })
+        });
+
+        if (!response.ok) throw new Error('Erreur lors de la mise à jour');
+      } else {
+        const response = await fetch('/api/site-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            key: 'rowing_care_cup_manual_count',
+            value: value.toString(),
+            type: 'NUMBER',
+            category: 'rowing_care_cup',
+            label: 'Nombre d\'inscrits manuel Rowing Care Cup',
+            description: 'Nombre d\'inscrits saisi manuellement pour la Rowing Care Cup'
+          })
+        });
+
+        if (!response.ok) throw new Error('Erreur lors de la création');
+      }
+
+      setManualCount(value);
+      setIsEditingCount(false);
+    } catch (error) {
+      console.error('Error updating manual count:', error);
+      alert('Erreur lors de la mise à jour');
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center py-12">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600"></div>
     </div>;
   }
 
+  const totalCount = registrations.length + manualCount;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Rowing Care Cup - Inscriptions</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Rowing Care Cup - Inscriptions</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {registrations.length} inscription(s) en ligne + {manualCount} inscription(s) manuelle(s) = <span className="font-semibold">{totalCount} total</span>
+          </p>
+        </div>
         <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
           <Download className="w-5 h-5" />
           <span>Exporter CSV</span>
         </button>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Inscriptions manuelles</h3>
+            <p className="text-sm text-gray-600 mt-1">Ajoutez des inscriptions enregistrées hors ligne</p>
+          </div>
+          <div className="flex items-center space-x-3">
+            {isEditingCount ? (
+              <>
+                <input
+                  type="number"
+                  value={editCountValue}
+                  onChange={(e) => setEditCountValue(e.target.value)}
+                  className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500"
+                  min="0"
+                />
+                <button
+                  onClick={handleSaveCount}
+                  className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  <Save className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setIsEditingCount(false)}
+                  className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="text-2xl font-bold text-pink-600">{manualCount}</span>
+                <button
+                  onClick={handleEditCount}
+                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                >
+                  <Edit2 className="w-5 h-5" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {registrations.length === 0 ? (

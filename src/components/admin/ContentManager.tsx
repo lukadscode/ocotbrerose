@@ -34,54 +34,9 @@ const ContentManager = () => {
   const fetchContents = async () => {
     setLoading(true);
     try {
-      const mockData: SiteContent[] = [
-        {
-          id: '1',
-          key: 'defi_km_goal',
-          value: '27000',
-          type: 'NUMBER',
-          category: 'defi_rose',
-          label: 'Objectif kilomètres Défi Rose',
-          description: 'Nombre total de kilomètres à atteindre pour le défi'
-        },
-        {
-          id: '2',
-          key: 'home_hero_title',
-          value: 'Octobre Rose 2025 x FFAviron',
-          type: 'TEXT',
-          category: 'home',
-          label: 'Titre principal page d\'accueil',
-          description: 'Titre affiché en haut de la page d\'accueil'
-        },
-        {
-          id: '3',
-          key: 'home_hero_subtitle',
-          value: 'Ensemble pour la lutte contre le cancer du sein',
-          type: 'TEXT',
-          category: 'home',
-          label: 'Sous-titre page d\'accueil',
-          description: 'Sous-titre affiché sous le titre principal'
-        },
-        {
-          id: '4',
-          key: 'rowing_care_cup_date',
-          value: '2025-10-18',
-          type: 'TEXT',
-          category: 'rowing_care_cup',
-          label: 'Date Rowing Care Cup',
-          description: 'Date de l\'événement Rowing Care Cup'
-        },
-        {
-          id: '5',
-          key: 'contact_email',
-          value: 'contact@octobreroseaviron.fr',
-          type: 'TEXT',
-          category: 'general',
-          label: 'Email de contact',
-          description: 'Adresse email principale de contact'
-        }
-      ];
-      setContents(mockData);
+      const response = await fetch('/api/site-content');
+      const data = await response.json();
+      setContents(data);
     } catch (error) {
       console.error('Error fetching contents:', error);
     } finally {
@@ -105,7 +60,14 @@ const ContentManager = () => {
 
   const handleSave = async (content: SiteContent) => {
     try {
-      console.log('Updating content:', content.key, editValue);
+      const response = await fetch(`/api/site-content/${content.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: editValue })
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la mise à jour');
+
       setEditingId(null);
       fetchContents();
     } catch (error) {
@@ -117,7 +79,14 @@ const ContentManager = () => {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      console.log('Creating content:', newContent);
+      const response = await fetch('/api/site-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newContent)
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la création');
+
       setShowAddForm(false);
       setNewContent({
         key: '',

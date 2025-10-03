@@ -233,16 +233,19 @@ app.post("/api/defi-rose/submit", async (req, res) => {
       });
     }
 
+    const count = typeParticipant === 'structure' ? parseInt(participantCount) || 1 : 1;
+    const totalKilometers = parseFloat(kilometers) * count;
+
     const entry = await prisma.kilometerEntry.create({
       data: {
         participantId: participant.id,
         date: new Date(date),
         activityType: activityType ? activityType.toUpperCase() : 'INDOOR',
-        kilometers: parseFloat(kilometers),
+        kilometers: totalKilometers,
         duration: duration || null,
         location: location || pays || null,
         participationType: typeParticipant === 'structure' ? 'COLLECTIVE' : 'INDIVIDUAL',
-        participantCount: typeParticipant === 'structure' ? parseInt(participantCount) || 1 : 1,
+        participantCount: count,
         description: description || null,
         photoUrl: photoUrl || null,
         validated: false
@@ -609,6 +612,108 @@ app.delete("/api/clubs/:id", async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error("Error deleting club:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ SITE CONTENT API ============
+
+app.get("/api/site-content", async (req, res) => {
+  try {
+    const contents = await prisma.siteContent.findMany({
+      orderBy: { category: 'asc' }
+    });
+    res.json(contents);
+  } catch (error) {
+    console.error("Error fetching site content:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/site-content/:key", async (req, res) => {
+  try {
+    const { key } = req.params;
+    const content = await prisma.siteContent.findUnique({
+      where: { key }
+    });
+
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+
+    res.json(content);
+  } catch (error) {
+    console.error("Error fetching content:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/site-content", async (req, res) => {
+  try {
+    const { key, value, type, category, label, description } = req.body;
+
+    const content = await prisma.siteContent.create({
+      data: {
+        key,
+        value,
+        type: type || 'TEXT',
+        category: category || 'general',
+        label,
+        description
+      }
+    });
+
+    res.json(content);
+  } catch (error) {
+    console.error("Error creating content:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put("/api/site-content/:idOrKey", async (req, res) => {
+  try {
+    const { idOrKey } = req.params;
+    const { value, label, description } = req.body;
+
+    let content = await prisma.siteContent.findUnique({
+      where: { key: idOrKey }
+    });
+
+    if (!content) {
+      content = await prisma.siteContent.findUnique({
+        where: { id: idOrKey }
+      });
+    }
+
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+
+    const updated = await prisma.siteContent.update({
+      where: { id: content.id },
+      data: {
+        value,
+        ...(label && { label }),
+        ...(description !== undefined && { description })
+      }
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Error updating content:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/api/site-content/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.siteContent.delete({
+      where: { id }
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting content:", error);
     res.status(500).json({ error: error.message });
   }
 });
