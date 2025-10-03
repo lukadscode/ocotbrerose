@@ -14,24 +14,32 @@ const RowingCareCup = () => {
   React.useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [registrationsResponse, contentResponse] = await Promise.all([
+        const [registrationsResponse, countResponse, amountResponse] = await Promise.all([
           fetch('/api/rowing-care-cup'),
-          fetch('/api/site-content/rowing_care_cup_manual_count')
+          fetch('/api/site-content/rowing_care_cup_manual_count'),
+          fetch('/api/site-content/rowing_care_cup_manual_amount')
         ]);
 
         const registrations = await registrationsResponse.json();
 
         let manualCount = 0;
-        if (contentResponse.ok) {
-          const content = await contentResponse.json();
+        if (countResponse.ok) {
+          const content = await countResponse.json();
           manualCount = parseInt(content.value) || 0;
         }
 
+        let manualAmount = 0;
+        if (amountResponse.ok) {
+          const content = await amountResponse.json();
+          manualAmount = parseFloat(content.value) || 0;
+        }
+
         const totalRegistrations = registrations.length + manualCount;
-        const totalAmount = registrations.reduce((sum: number, reg: any) => {
+        const onlineAmount = registrations.reduce((sum: number, reg: any) => {
           const price = parseFloat(reg.price) || 0;
           return sum + price;
         }, 0);
+        const totalAmount = onlineAmount + manualAmount;
 
         setStats({
           totalRegistrations,
