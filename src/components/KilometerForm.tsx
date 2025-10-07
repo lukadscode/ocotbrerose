@@ -77,8 +77,11 @@ const KilometerForm: React.FC<KilometerFormProps> = ({ onClose, onSubmit, user }
   const validateActivityDetails = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.kilometers || parseFloat(formData.kilometers) <= 0) {
+    const km = parseFloat(formData.kilometers);
+    if (!formData.kilometers || km <= 0) {
       newErrors.kilometers = 'Distance requise et supérieure à 0';
+    } else if (km > 999) {
+      newErrors.kilometers = 'Distance maximale : 999 km';
     }
 
     if (!formData.date) {
@@ -481,6 +484,7 @@ const KilometerForm: React.FC<KilometerFormProps> = ({ onClose, onSubmit, user }
               type="number"
               step="0.1"
               min="0"
+              max="999"
               value={formData.kilometers}
               onChange={(e) => updateFormData('kilometers', e.target.value)}
               className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent ${

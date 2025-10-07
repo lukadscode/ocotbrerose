@@ -66,8 +66,11 @@ const SimpleDefiForm: React.FC<SimpleDefiFormProps> = ({ onClose, onSubmit }) =>
     }
 
     if (step === 3) {
-      if (!formData.kilometers || parseFloat(formData.kilometers as string) <= 0) {
+      const km = parseFloat(formData.kilometers as string);
+      if (!formData.kilometers || km <= 0) {
         newErrors.kilometers = 'Distance requise (supérieure à 0)';
+      } else if (km > 999) {
+        newErrors.kilometers = 'Distance maximale : 999 km';
       }
       if (!formData.date) newErrors.date = 'Date requise';
     }
@@ -108,11 +111,13 @@ const SimpleDefiForm: React.FC<SimpleDefiFormProps> = ({ onClose, onSubmit }) =>
         throw new Error(result.error || 'Erreur lors de la soumission');
       }
 
-      const totalKm = formData.typeParticipant === 'structure'
-        ? parseFloat(formData.kilometers as string) * formData.participantCount
-        : parseFloat(formData.kilometers as string);
+      const km = parseFloat(formData.kilometers as string);
 
-      alert(`🎀 Merci ! ${totalKm} km ont été enregistrés avec succès !`);
+      if (formData.typeParticipant === 'structure') {
+        alert(`🎀 Merci ! ${km} km parcourus par ${formData.participantCount} participants ont été enregistrés avec succès !`);
+      } else {
+        alert(`🎀 Merci ! ${km} km ont été enregistrés avec succès !`);
+      }
       onSubmit();
     } catch (error) {
       console.error('Erreur:', error);
@@ -398,12 +403,15 @@ const SimpleDefiForm: React.FC<SimpleDefiFormProps> = ({ onClose, onSubmit }) =>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Activity className="w-4 h-4 inline mr-2" />
-                    Kilomètres parcourus *
+                    {formData.typeParticipant === 'structure'
+                      ? 'Kilomètres totaux parcourus par l\'équipe *'
+                      : 'Kilomètres parcourus *'}
                   </label>
                   <input
                     type="number"
                     step="0.1"
                     min="0"
+                    max="999"
                     value={formData.kilometers}
                     onChange={(e) => updateFormData('kilometers', e.target.value)}
                     className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all ${
@@ -478,9 +486,7 @@ const SimpleDefiForm: React.FC<SimpleDefiFormProps> = ({ onClose, onSubmit }) =>
               {formData.typeParticipant === 'structure' && (
                 <div className="bg-pink-50 border-2 border-pink-200 rounded-xl p-4">
                   <p className="text-sm text-pink-800">
-                    <strong>Total calculé :</strong> {parseFloat(formData.kilometers || '0') * formData.participantCount} km
-                    <br />
-                    <span className="text-xs">({formData.kilometers} km × {formData.participantCount} participants)</span>
+                    <strong>{formData.kilometers} km</strong> parcourus par <strong>{formData.participantCount} participants</strong>
                   </p>
                 </div>
               )}

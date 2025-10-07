@@ -234,14 +234,13 @@ app.post("/api/defi-rose/submit", async (req, res) => {
     }
 
     const count = typeParticipant === 'structure' ? parseInt(participantCount) || 1 : 1;
-    const totalKilometers = parseFloat(kilometers) * count;
 
     const entry = await prisma.kilometerEntry.create({
       data: {
         participantId: participant.id,
         date: new Date(date),
         activityType: activityType ? activityType.toUpperCase() : 'INDOOR',
-        kilometers: totalKilometers,
+        kilometers: parseFloat(kilometers),
         duration: duration || null,
         location: location || pays || null,
         participationType: typeParticipant === 'structure' ? 'COLLECTIVE' : 'INDIVIDUAL',
