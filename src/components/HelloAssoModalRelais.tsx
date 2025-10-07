@@ -48,7 +48,7 @@ const HelloAssoModal: React.FC<HelloAssoModalProps> = ({ onClose }) => {
             <iframe 
               id="haWidget" 
               allowTransparency={true}
-              src="https://www.helloasso.com/associations/federation-francaise-d-aviron/evenements/rowing-care-cup-courses-relais/widget" 
+              src="https://www.helloasso.com/associations/federation-francaise-d-aviron/evenements/rowing-care-cup-courses-relais-1/widget" 
               style={{ 
                 width: '100%', 
                 border: 'none',
