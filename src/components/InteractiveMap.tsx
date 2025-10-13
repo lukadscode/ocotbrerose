@@ -1,157 +1,138 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Navigation, Flag, Star, Play, Pause } from 'lucide-react';
+import { Navigation, Star } from 'lucide-react';
+import { kilometerAPI } from '../lib/api';
 
 const InteractiveMap = () => {
-  const [currentStep, setCurrentStep] = useState(5);
-  const [animationProgress, setAnimationProgress] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(true);
+  const [totalKilometers, setTotalKilometers] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  // Capitales européennes avec leurs coordonnées précises basées sur l'image fournie
-  const capitals = [
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
-    { name: 'Lisbonne', country: 'Portugal', x: 0, y: 0, distance: 0, completed: false },
+  const TOTAL_DISTANCE = 27000;
+
+  const ribbonPath = [
+    { x: 50, y: 500 },
+    { x: 80, y: 450 },
+    { x: 120, y: 400 },
+    { x: 150, y: 360 },
+    { x: 180, y: 330 },
+    { x: 210, y: 300 },
+    { x: 240, y: 280 },
+    { x: 270, y: 250 },
+    { x: 300, y: 220 },
+    { x: 330, y: 200 },
+    { x: 360, y: 180 },
+    { x: 390, y: 160 },
+    { x: 420, y: 150 },
+    { x: 450, y: 130 },
   ];
 
-  // Animation du ruban rose
+  const fetchKilometers = async () => {
+    try {
+      const kilometerEntries = await kilometerAPI.getValidated();
+      const total = kilometerEntries.reduce((sum: number, entry: any) => sum + entry.kilometers, 0);
+      setTotalKilometers(total);
+    } catch (error) {
+      console.error('Error fetching kilometers:', error);
+      setTotalKilometers(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (!isAnimating) return;
-
-    const interval = setInterval(() => {
-      setAnimationProgress(prev => (prev + 0.5) % 100);
-    }, 50);
-
+    fetchKilometers();
+    const interval = setInterval(fetchKilometers, 30000);
     return () => clearInterval(interval);
-  }, [isAnimating]);
+  }, []);
 
-  // Simulation de progression
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (currentStep < capitals.length - 1) {
-        setCurrentStep(prev => prev + 1);
-        capitals[currentStep + 1].completed = true;
-      }
-    }, 5000);
+  const progressPercentage = Math.min((totalKilometers / TOTAL_DISTANCE) * 100, 100);
+  const pointsToShow = Math.ceil((progressPercentage / 100) * ribbonPath.length);
+  const visiblePath = ribbonPath.slice(0, Math.max(2, pointsToShow));
 
-    return () => clearInterval(interval);
-  }, [currentStep]);
-
-  const completedCapitals = capitals.filter(c => c.completed);
-  const nextCapital = capitals.find(c => !c.completed);
-  const totalDistance = capitals.reduce((sum, capital) => sum + capital.distance, 0);
-  const completedDistance = completedCapitals.reduce((sum, capital) => sum + capital.distance, 0);
-
-  // Génération du chemin SVG pour le ruban rose large
   const generateRibbonPath = () => {
-    if (completedCapitals.length < 2) return '';
-    
-    let path = `M ${completedCapitals[0].x} ${completedCapitals[0].y}`;
-    
-    for (let i = 1; i < completedCapitals.length; i++) {
-      const current = completedCapitals[i];
-      const previous = completedCapitals[i - 1];
-      
-      // Courbe de Bézier pour un tracé plus fluide et réaliste
+    if (visiblePath.length < 2) return '';
+
+    let path = `M ${visiblePath[0].x} ${visiblePath[0].y}`;
+
+    for (let i = 1; i < visiblePath.length; i++) {
+      const current = visiblePath[i];
+      const previous = visiblePath[i - 1];
+
       const controlX1 = previous.x + (current.x - previous.x) * 0.3;
-      const controlY1 = previous.y - 30;
+      const controlY1 = previous.y - 20;
       const controlX2 = previous.x + (current.x - previous.x) * 0.7;
-      const controlY2 = current.y - 30;
-      
+      const controlY2 = current.y - 20;
+
       path += ` C ${controlX1} ${controlY1} ${controlX2} ${controlY2} ${current.x} ${current.y}`;
     }
-    
+
     return path;
   };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement de la carte...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-xl p-8">
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
-          
-          <button
-            onClick={() => setIsAnimating(!isAnimating)}
-            className="flex items-center space-x-2 px-4 py-2 bg-pink-100 text-pink-700 rounded-lg hover:bg-pink-200 transition-colors"
-          >
-            {isAnimating ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            <span>{isAnimating ? 'Pause' : 'Play'}</span>
-          </button>
+          <h3 className="text-2xl font-bold text-gray-900">Parcours Octobre Rose 2025</h3>
+          <span className="text-3xl font-bold text-pink-600">
+            {totalKilometers.toLocaleString('fr-FR')} km
+          </span>
         </div>
-        
+
         <div className="flex justify-center items-center space-x-8 text-sm mb-4">
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-pink-500 rounded-full animate-pulse"></div>
-            <span className="text-gray-600">Étapes accomplies</span>
+            <div className="w-4 h-4 bg-white border-2 border-pink-500 rounded-full animate-pulse"></div>
+            <span className="text-gray-600">Ruban blanc</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-gray-300 rounded-full"></div>
-            <span className="text-gray-600">Étapes à venir</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Star className="w-4 h-4 text-yellow-500 animate-bounce" />
-            <span className="text-gray-600">Prochaine étape</span>
+            <Star className="w-4 h-4 text-pink-500" />
+            <span className="text-gray-600">Progression en temps réel</span>
           </div>
         </div>
 
-        {/* Barre de progression */}
         <div className="bg-gray-200 rounded-full h-3 mb-2">
           <div
             className="bg-gradient-to-r from-pink-500 to-rose-600 h-3 rounded-full transition-all duration-1000 relative overflow-hidden"
-            style={{ width: `${(completedDistance / totalDistance) * 100}%` }}
+            style={{ width: `${progressPercentage}%` }}
           >
             <div className="absolute inset-0 bg-white/30 h-full animate-pulse"></div>
           </div>
         </div>
         <div className="flex justify-between text-sm text-gray-600">
-          <span>{completedDistance.toLocaleString()} km</span>
+          <span>{totalKilometers.toLocaleString('fr-FR')} km</span>
           <span className="font-semibold text-pink-600">
-            {Math.round((completedDistance / totalDistance) * 100)}% accompli
+            {progressPercentage.toFixed(1)}% accompli
           </span>
-          <span>{totalDistance.toLocaleString()} km</span>
+          <span>{TOTAL_DISTANCE.toLocaleString('fr-FR')} km</span>
         </div>
       </div>
 
-      {/* Carte d'Europe colorée avec ruban rose */}
-      <div className="relative bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-50 rounded-xl overflow-hidden">
+      <div className="relative bg-gradient-to-br from-blue-100 via-blue-50 to-sky-50 rounded-xl overflow-hidden">
         <svg
           viewBox="0 0 500 600"
           className="w-full h-full"
           style={{ minHeight: '600px' }}
         >
-          {/* Définitions pour les gradients et effets */}
           <defs>
-            <linearGradient id="ribbonGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#ec4899" stopOpacity="0.9" />
-              <stop offset="50%" stopColor="#f43f5e" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#be185d" stopOpacity="0.9" />
+            <linearGradient id="whiteRibbonGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+              <stop offset="50%" stopColor="#f8f9fa" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.95" />
             </linearGradient>
-            
-            <filter id="ribbonGlow">
-              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-              <feMerge> 
+
+            <filter id="whiteRibbonGlow">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+              <feMerge>
                 <feMergeNode in="coloredBlur"/>
                 <feMergeNode in="SourceGraphic"/>
               </feMerge>
@@ -159,7 +140,7 @@ const InteractiveMap = () => {
 
             <linearGradient id="ribbonShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="rgba(255, 255, 255, 0)" />
-              <stop offset="50%" stopColor="rgba(255, 255, 255, 0.6)" />
+              <stop offset="50%" stopColor="rgba(255, 255, 255, 0.8)" />
               <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
               <animateTransform
                 attributeName="gradientTransform"
@@ -171,199 +152,180 @@ const InteractiveMap = () => {
             </linearGradient>
           </defs>
 
-          {/* Mer/Océan */}
           <rect width="500" height="600" fill="#E0F2FE" />
 
-          {/* Pays européens colorés comme dans l'image */}
           <g>
-            {/* Utilisation de la carte SVG fournie */}
-            <image 
-              href="/carte_rose.svg" 
-              x="0" 
-              y="0" 
-              width="500" 
-              height="600" 
+            <image
+              href="/carte_rose.svg"
+              x="0"
+              y="0"
+              width="500"
+              height="600"
               opacity="0.8"
             />
           </g>
 
-          {/* Ruban rose large et réaliste */}
-          {completedCapitals.length > 1 && (
+          {visiblePath.length > 1 && (
             <>
-              {/* Ombre du ruban */}
               <path
                 d={generateRibbonPath()}
-                stroke="rgba(0,0,0,0.3)"
-                strokeWidth="25"
+                stroke="rgba(0,0,0,0.15)"
+                strokeWidth="18"
                 fill="none"
-                transform="translate(3, 3)"
-                opacity="0.5"
+                transform="translate(2, 2)"
+                opacity="0.6"
               />
-              
-              {/* Ruban principal large */}
+
               <path
                 d={generateRibbonPath()}
-                stroke="url(#ribbonGradient)"
-                strokeWidth="20"
+                stroke="url(#whiteRibbonGradient)"
+                strokeWidth="16"
                 fill="none"
-                filter="url(#ribbonGlow)"
+                filter="url(#whiteRibbonGlow)"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
 
-              {/* Effet shimmer sur le ruban */}
+              <path
+                d={generateRibbonPath()}
+                stroke="#ec4899"
+                strokeWidth="2"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.5"
+              />
+
               <path
                 d={generateRibbonPath()}
                 stroke="url(#ribbonShimmer)"
-                strokeWidth="20"
+                strokeWidth="16"
                 fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-            </>
-          )}
 
-          {/* Points des capitales */}
-          {capitals.map((capital, index) => (
-            <g key={capital.name}>
-              {/* Cercle de base */}
-              <circle
-                cx={capital.x}
-                cy={capital.y}
-                r={capital.completed ? "6" : "4"}
-                fill={capital.completed ? "#ec4899" : "#6b7280"}
-                stroke={capital.completed ? "#be185d" : "#374151"}
-                strokeWidth="2"
-                className={capital.completed ? "animate-pulse" : ""}
-              />
-              
-              {/* Effet de rayonnement pour les capitales accomplies */}
-              {capital.completed && (
-                <circle
-                  cx={capital.x}
-                  cy={capital.y}
-                  r="10"
-                  fill="none"
-                  stroke="#ec4899"
-                  strokeWidth="1"
-                  opacity="0.4"
-                  className="animate-ping"
-                />
-              )}
-              
-              {/* Indicateur spécial pour la prochaine étape */}
-              {capital === nextCapital && (
+              {visiblePath.length > 0 && (
                 <>
                   <circle
-                    cx={capital.x}
-                    cy={capital.y}
-                    r="12"
-                    fill="none"
-                    stroke="#fbbf24"
-                    strokeWidth="2"
-                    className="animate-ping"
+                    cx={visiblePath[visiblePath.length - 1].x}
+                    cy={visiblePath[visiblePath.length - 1].y}
+                    r="8"
+                    fill="#ec4899"
+                    className="animate-pulse"
                   />
                   <circle
-                    cx={capital.x}
-                    cy={capital.y}
-                    r="6"
-                    fill="#fbbf24"
-                    className="animate-pulse"
+                    cx={visiblePath[visiblePath.length - 1].x}
+                    cy={visiblePath[visiblePath.length - 1].y}
+                    r="12"
+                    fill="none"
+                    stroke="#ec4899"
+                    strokeWidth="2"
+                    opacity="0.6"
+                    className="animate-ping"
                   />
                 </>
               )}
+            </>
+          )}
 
-              {/* Nom de la capitale */}
-              <text
-                x={capital.x}
-                y={capital.y - 15}
-                textAnchor="middle"
-                className="text-xs font-bold fill-gray-900"
-                fontSize="11"
-                style={{ textShadow: '0 0 3px rgba(255,255,255,0.9)' }}
-              >
-                {capital.name}
-              </text>
-              
-              {/* Pays */}
-              <text
-                x={capital.x}
-                y={capital.y - 5}
-                textAnchor="middle"
-                className="text-xs fill-gray-700"
-                fontSize="9"
-                style={{ textShadow: '0 0 2px rgba(255,255,255,0.9)' }}
-              >
-                {capital.country}
-              </text>
-            </g>
-          ))}
+          <g>
+            <circle
+              cx={ribbonPath[0].x}
+              cy={ribbonPath[0].y}
+              r="6"
+              fill="#10b981"
+              stroke="#047857"
+              strokeWidth="2"
+            />
+            <text
+              x={ribbonPath[0].x}
+              y={ribbonPath[0].y + 25}
+              textAnchor="middle"
+              className="text-xs font-bold fill-gray-900"
+              fontSize="11"
+              style={{ textShadow: '0 0 3px rgba(255,255,255,0.9)' }}
+            >
+              Départ
+            </text>
+
+            <circle
+              cx={ribbonPath[ribbonPath.length - 1].x}
+              cy={ribbonPath[ribbonPath.length - 1].y}
+              r="6"
+              fill="#ef4444"
+              stroke="#dc2626"
+              strokeWidth="2"
+            />
+            <text
+              x={ribbonPath[ribbonPath.length - 1].x}
+              y={ribbonPath[ribbonPath.length - 1].y - 15}
+              textAnchor="middle"
+              className="text-xs font-bold fill-gray-900"
+              fontSize="11"
+              style={{ textShadow: '0 0 3px rgba(255,255,255,0.9)' }}
+            >
+              Arrivée
+            </text>
+          </g>
         </svg>
 
-        {/* Légende animée */}
         <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-4 shadow-lg border border-pink-100">
           <div className="flex items-center space-x-2 mb-3">
             <Navigation className="w-5 h-5 text-pink-500" />
-            <span className="font-semibold text-gray-800">Progression en temps réel</span>
+            <span className="font-semibold text-gray-800">Parcours Octobre Rose</span>
           </div>
           <div className="text-sm text-gray-600 space-y-1">
             <div className="flex items-center space-x-2">
-              <Flag className="w-4 h-4 text-green-500" />
-              <span>{completedCapitals.length} Pays atteints</span>
+              <div className="w-4 h-4 bg-white border-2 border-pink-500 rounded-full"></div>
+              <span>Ruban blanc symbolique</span>
             </div>
-            {nextCapital && (
-              <div className="flex items-center space-x-2">
-                <Star className="w-4 h-4 text-yellow-500" />
-                <span>Prochaine: {nextCapital.name}</span>
-              </div>
-            )}
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-pink-500 rounded-full animate-pulse"></div>
-              <span>{completedDistance.toLocaleString()} km parcourus</span>
+              <span>{totalKilometers.toLocaleString('fr-FR')} km parcourus</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Star className="w-4 h-4 text-pink-500" />
+              <span>{progressPercentage.toFixed(1)}% accompli</span>
             </div>
           </div>
         </div>
 
-        {/* Indicateur de vitesse */}
         <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-pink-100">
           <div className="text-center">
-            <div className="text-lg font-bold text-pink-600">
-              {Math.round((completedDistance / totalDistance) * 100)}%
+            <div className="text-2xl font-bold text-pink-600">
+              {progressPercentage.toFixed(1)}%
             </div>
-            <div className="text-xs text-gray-600">Objectif atteint</div>
+            <div className="text-xs text-gray-600">Objectif</div>
+            <div className="text-xs font-semibold text-gray-800 mt-1">
+              {(TOTAL_DISTANCE - totalKilometers).toLocaleString('fr-FR')} km restants
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Statistiques de progression */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="text-center p-4 bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl">
-          <div className="text-2xl font-bold text-pink-600 mb-1">
-            {completedCapitals.length}
-          </div>
-          <div className="text-sm text-gray-600">Pays atteints</div>
-        </div>
-        
-        <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
-          <div className="text-2xl font-bold text-blue-600 mb-1">
-            {capitals.length - completedCapitals.length}
-          </div>
-          <div className="text-sm text-gray-600">Pays restants</div>
-        </div>
-        
-        <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
-          <div className="text-2xl font-bold text-green-600 mb-1">
-            {completedDistance.toLocaleString()}
-          </div>
-          <div className="text-sm text-gray-600">Kilomètres parcourus</div>
-        </div>
-
-        <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl">
-          <div className="text-2xl font-bold text-purple-600 mb-1">
-            {(totalDistance - completedDistance).toLocaleString()}
-          </div>
-          <div className="text-sm text-gray-600">Kilomètres restants</div>
-        </div>
+      <div className="mt-8 p-6 bg-gradient-to-r from-pink-100 to-rose-100 rounded-xl text-center">
+        {totalKilometers > 0 ? (
+          <>
+            <p className="text-lg font-semibold text-gray-800 mb-2">
+              Le ruban blanc avance grâce à vous ! Plus que <span className="text-pink-600 font-bold">
+                {(TOTAL_DISTANCE - totalKilometers).toLocaleString('fr-FR')} km
+              </span> pour atteindre l'objectif.
+            </p>
+            <p className="text-gray-600">
+              Chaque kilomètre parcouru est un pas de plus dans la lutte contre le cancer du sein.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-lg font-semibold text-gray-800 mb-2">
+              Le ruban blanc n'attend que vous pour commencer son parcours !
+            </p>
+            <p className="text-gray-600">
+              Ajoutez vos kilomètres pour faire avancer le ruban sur la carte.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
