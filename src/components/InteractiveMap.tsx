@@ -82,20 +82,39 @@ const InteractiveMap = () => {
         <div className="relative w-full" style={{ paddingBottom: '100%' }}>
           <div className="absolute inset-0">
             <img
-              src="/Carte Europe Octobre Rose (1).svg"
-              alt="Carte d'Europe"
-              className="w-full h-full object-contain"
+              src="/carte_rose.svg"
+              alt="Carte d'Europe Octobre Rose"
+              className="absolute inset-0 w-full h-full object-contain"
+            />
+
+            <div
+              className="absolute inset-0 overflow-hidden"
               style={{
                 clipPath: `inset(0 ${100 - progressPercentage}% 0 0)`,
                 transition: 'clip-path 1s ease-in-out'
               }}
-            />
-            <img
-              src="/Carte Europe Octobre Rose (1).svg"
-              alt="Carte d'Europe (grisée)"
-              className="absolute inset-0 w-full h-full object-contain opacity-30"
-              style={{ filter: 'grayscale(100%)' }}
-            />
+            >
+              <img
+                src="/ruban.svg"
+                alt="Ruban blanc"
+                className="absolute inset-0 w-full h-full object-contain"
+              />
+            </div>
+
+            {progressPercentage > 0 && (
+              <div
+                className="absolute top-0 bottom-0 w-1 bg-pink-500 opacity-60"
+                style={{
+                  left: `${progressPercentage}%`,
+                  transition: 'left 1s ease-in-out'
+                }}
+              >
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                  <div className="w-4 h-4 bg-pink-500 rounded-full animate-pulse"></div>
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-pink-500 rounded-full opacity-30 animate-ping"></div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
