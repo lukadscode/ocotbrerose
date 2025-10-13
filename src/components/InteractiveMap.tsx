@@ -81,37 +81,56 @@ const InteractiveMap = () => {
       <div className="relative bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100 rounded-xl overflow-hidden">
         <div className="relative w-full" style={{ paddingBottom: '100%' }}>
           <div className="absolute inset-0">
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1080 1080" style={{ position: 'absolute', width: 0, height: 0 }}>
+              <defs>
+                <linearGradient id="ribbonReveal" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="white" stopOpacity="1">
+                    <animate
+                      attributeName="offset"
+                      values="0%;1%"
+                      dur="0.1s"
+                      fill="freeze"
+                    />
+                  </stop>
+                  <stop offset={`${progressPercentage}%`} stopColor="white" stopOpacity="1" />
+                  <stop offset={`${Math.min(progressPercentage + 5, 100)}%`} stopColor="white" stopOpacity="0" />
+                  <stop offset="100%" stopColor="white" stopOpacity="0" />
+                </linearGradient>
+                <mask id="ribbonMask">
+                  <rect width="1080" height="1080" fill="url(#ribbonReveal)" />
+                </mask>
+              </defs>
+            </svg>
+
             <img
               src="/carte_rose.svg"
               alt="Carte d'Europe Octobre Rose"
               className="absolute inset-0 w-full h-full object-contain"
             />
 
-            <div
-              className="absolute inset-0 overflow-hidden"
-              style={{
-                clipPath: `inset(0 ${100 - progressPercentage}% 0 0)`,
-                transition: 'clip-path 1s ease-in-out'
-              }}
-            >
+            <div className="absolute inset-0" style={{ mask: 'url(#ribbonMask)', WebkitMask: 'url(#ribbonMask)' }}>
               <img
                 src="/ruban.svg"
                 alt="Ruban blanc"
-                className="absolute inset-0 w-full h-full object-contain"
+                className="absolute inset-0 w-full h-full object-contain transition-all duration-1000"
               />
             </div>
 
-            {progressPercentage > 0 && (
+            {progressPercentage > 0 && progressPercentage < 100 && (
               <div
-                className="absolute top-0 bottom-0 w-1 bg-pink-500 opacity-60"
+                className="absolute w-6 h-6 pointer-events-none"
                 style={{
-                  left: `${progressPercentage}%`,
-                  transition: 'left 1s ease-in-out'
+                  left: `${20 + (progressPercentage * 0.6)}%`,
+                  top: `${10 + (progressPercentage * 0.65)}%`,
+                  transition: 'left 1s ease-in-out, top 1s ease-in-out'
                 }}
               >
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className="w-4 h-4 bg-pink-500 rounded-full animate-pulse"></div>
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-pink-500 rounded-full opacity-30 animate-ping"></div>
+                <div className="relative">
+                  <div className="w-6 h-6 bg-pink-500 rounded-full animate-pulse shadow-lg"></div>
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-pink-500 rounded-full opacity-30 animate-ping"></div>
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-lg shadow-lg border border-pink-200 whitespace-nowrap">
+                    <span className="text-xs font-bold text-pink-600">{progressPercentage.toFixed(1)}%</span>
+                  </div>
                 </div>
               </div>
             )}
