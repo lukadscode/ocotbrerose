@@ -8,23 +8,6 @@ const InteractiveMap = () => {
 
   const TOTAL_DISTANCE = 27000;
 
-  const ribbonPath = [
-    { x: 50, y: 500 },
-    { x: 80, y: 450 },
-    { x: 120, y: 400 },
-    { x: 150, y: 360 },
-    { x: 180, y: 330 },
-    { x: 210, y: 300 },
-    { x: 240, y: 280 },
-    { x: 270, y: 250 },
-    { x: 300, y: 220 },
-    { x: 330, y: 200 },
-    { x: 360, y: 180 },
-    { x: 390, y: 160 },
-    { x: 420, y: 150 },
-    { x: 450, y: 130 },
-  ];
-
   const fetchKilometers = async () => {
     try {
       const kilometerEntries = await kilometerAPI.getValidated();
@@ -45,28 +28,6 @@ const InteractiveMap = () => {
   }, []);
 
   const progressPercentage = Math.min((totalKilometers / TOTAL_DISTANCE) * 100, 100);
-  const pointsToShow = Math.ceil((progressPercentage / 100) * ribbonPath.length);
-  const visiblePath = ribbonPath.slice(0, Math.max(2, pointsToShow));
-
-  const generateRibbonPath = () => {
-    if (visiblePath.length < 2) return '';
-
-    let path = `M ${visiblePath[0].x} ${visiblePath[0].y}`;
-
-    for (let i = 1; i < visiblePath.length; i++) {
-      const current = visiblePath[i];
-      const previous = visiblePath[i - 1];
-
-      const controlX1 = previous.x + (current.x - previous.x) * 0.3;
-      const controlY1 = previous.y - 20;
-      const controlX2 = previous.x + (current.x - previous.x) * 0.7;
-      const controlY2 = current.y - 20;
-
-      path += ` C ${controlX1} ${controlY1} ${controlX2} ${controlY2} ${current.x} ${current.y}`;
-    }
-
-    return path;
-  };
 
   if (loading) {
     return (
@@ -92,7 +53,7 @@ const InteractiveMap = () => {
         <div className="flex justify-center items-center space-x-8 text-sm mb-4">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 bg-white border-2 border-pink-500 rounded-full animate-pulse"></div>
-            <span className="text-gray-600">Ruban blanc</span>
+            <span className="text-gray-600">Ruban blanc progressif</span>
           </div>
           <div className="flex items-center space-x-2">
             <Star className="w-4 h-4 text-pink-500" />
@@ -117,158 +78,26 @@ const InteractiveMap = () => {
         </div>
       </div>
 
-      <div className="relative bg-gradient-to-br from-blue-100 via-blue-50 to-sky-50 rounded-xl overflow-hidden">
-        <svg
-          viewBox="0 0 500 600"
-          className="w-full h-full"
-          style={{ minHeight: '600px' }}
-        >
-          <defs>
-            <linearGradient id="whiteRibbonGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
-              <stop offset="50%" stopColor="#f8f9fa" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.95" />
-            </linearGradient>
-
-            <filter id="whiteRibbonGlow">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-
-            <linearGradient id="ribbonShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="rgba(255, 255, 255, 0)" />
-              <stop offset="50%" stopColor="rgba(255, 255, 255, 0.8)" />
-              <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
-              <animateTransform
-                attributeName="gradientTransform"
-                type="translate"
-                values="-100 0;100 0;-100 0"
-                dur="3s"
-                repeatCount="indefinite"
-              />
-            </linearGradient>
-          </defs>
-
-          <rect width="500" height="600" fill="#E0F2FE" />
-
-          <g>
-            <image
-              href="/carte_rose.svg"
-              x="0"
-              y="0"
-              width="500"
-              height="600"
-              opacity="0.8"
+      <div className="relative bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100 rounded-xl overflow-hidden">
+        <div className="relative w-full" style={{ paddingBottom: '100%' }}>
+          <div className="absolute inset-0">
+            <img
+              src="/Carte Europe Octobre Rose (1).svg"
+              alt="Carte d'Europe"
+              className="w-full h-full object-contain"
+              style={{
+                clipPath: `inset(0 ${100 - progressPercentage}% 0 0)`,
+                transition: 'clip-path 1s ease-in-out'
+              }}
             />
-          </g>
-
-          {visiblePath.length > 1 && (
-            <>
-              <path
-                d={generateRibbonPath()}
-                stroke="rgba(0,0,0,0.15)"
-                strokeWidth="18"
-                fill="none"
-                transform="translate(2, 2)"
-                opacity="0.6"
-              />
-
-              <path
-                d={generateRibbonPath()}
-                stroke="url(#whiteRibbonGradient)"
-                strokeWidth="16"
-                fill="none"
-                filter="url(#whiteRibbonGlow)"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              <path
-                d={generateRibbonPath()}
-                stroke="#ec4899"
-                strokeWidth="2"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity="0.5"
-              />
-
-              <path
-                d={generateRibbonPath()}
-                stroke="url(#ribbonShimmer)"
-                strokeWidth="16"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {visiblePath.length > 0 && (
-                <>
-                  <circle
-                    cx={visiblePath[visiblePath.length - 1].x}
-                    cy={visiblePath[visiblePath.length - 1].y}
-                    r="8"
-                    fill="#ec4899"
-                    className="animate-pulse"
-                  />
-                  <circle
-                    cx={visiblePath[visiblePath.length - 1].x}
-                    cy={visiblePath[visiblePath.length - 1].y}
-                    r="12"
-                    fill="none"
-                    stroke="#ec4899"
-                    strokeWidth="2"
-                    opacity="0.6"
-                    className="animate-ping"
-                  />
-                </>
-              )}
-            </>
-          )}
-
-          <g>
-            <circle
-              cx={ribbonPath[0].x}
-              cy={ribbonPath[0].y}
-              r="6"
-              fill="#10b981"
-              stroke="#047857"
-              strokeWidth="2"
+            <img
+              src="/Carte Europe Octobre Rose (1).svg"
+              alt="Carte d'Europe (grisée)"
+              className="absolute inset-0 w-full h-full object-contain opacity-30"
+              style={{ filter: 'grayscale(100%)' }}
             />
-            <text
-              x={ribbonPath[0].x}
-              y={ribbonPath[0].y + 25}
-              textAnchor="middle"
-              className="text-xs font-bold fill-gray-900"
-              fontSize="11"
-              style={{ textShadow: '0 0 3px rgba(255,255,255,0.9)' }}
-            >
-              Départ
-            </text>
-
-            <circle
-              cx={ribbonPath[ribbonPath.length - 1].x}
-              cy={ribbonPath[ribbonPath.length - 1].y}
-              r="6"
-              fill="#ef4444"
-              stroke="#dc2626"
-              strokeWidth="2"
-            />
-            <text
-              x={ribbonPath[ribbonPath.length - 1].x}
-              y={ribbonPath[ribbonPath.length - 1].y - 15}
-              textAnchor="middle"
-              className="text-xs font-bold fill-gray-900"
-              fontSize="11"
-              style={{ textShadow: '0 0 3px rgba(255,255,255,0.9)' }}
-            >
-              Arrivée
-            </text>
-          </g>
-        </svg>
+          </div>
+        </div>
 
         <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-4 shadow-lg border border-pink-100">
           <div className="flex items-center space-x-2 mb-3">
