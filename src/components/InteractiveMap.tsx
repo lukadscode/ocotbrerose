@@ -53,7 +53,7 @@ const InteractiveMap = () => {
         <div className="flex justify-center items-center space-x-8 text-sm mb-4">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 bg-white border-2 border-pink-500 rounded-full animate-pulse"></div>
-            <span className="text-gray-600">Ruban blanc progressif</span>
+            <span className="text-gray-600"></span>
           </div>
           <div className="flex items-center space-x-2">
             <Star className="w-4 h-4 text-pink-500" />
@@ -145,7 +145,7 @@ const InteractiveMap = () => {
           <div className="text-sm text-gray-600 space-y-1">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-white border-2 border-pink-500 rounded-full"></div>
-              <span>Ruban blanc symbolique</span>
+              <span></span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-pink-500 rounded-full animate-pulse"></div>
@@ -175,7 +175,7 @@ const InteractiveMap = () => {
         {totalKilometers > 0 ? (
           <>
             <p className="text-lg font-semibold text-gray-800 mb-2">
-              Le ruban blanc avance grâce à vous ! Plus que <span className="text-pink-600 font-bold">
+              Plus que <span className="text-pink-600 font-bold">
                 {(TOTAL_DISTANCE - totalKilometers).toLocaleString('fr-FR')} km
               </span> pour atteindre l'objectif.
             </p>
@@ -186,10 +186,10 @@ const InteractiveMap = () => {
         ) : (
           <>
             <p className="text-lg font-semibold text-gray-800 mb-2">
-              Le ruban blanc n'attend que vous pour commencer son parcours !
+              Nous n'attendons que vous pour commencer son parcours !
             </p>
             <p className="text-gray-600">
-              Ajoutez vos kilomètres pour faire avancer le ruban sur la carte.
+              Ajoutez vos kilomètres pour faire avancer la carte.
             </p>
           </>
         )}
