@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, CreditCard as Edit2, Trash2, CheckCircle, XCircle, ChevronLeft, ChevronRight, Filter, Target } from 'lucide-react';
+import { Search, CreditCard as Edit2, Trash2, CheckCircle, XCircle, ChevronLeft, ChevronRight, Filter, Target, Download } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface KilometerEntry {
@@ -163,6 +163,55 @@ const KilometersManager = () => {
     return colors[type] || 'bg-gray-100 text-gray-800';
   };
 
+  const exportToCSV = () => {
+    const headers = [
+      'Participant',
+      'Email',
+      'Club',
+      'Date',
+      'Type Activité',
+      'Kilomètres',
+      'Type Participation',
+      'Nombre Participants',
+      'Durée',
+      'Lieu',
+      'Description',
+      'Statut',
+      'Date Création'
+    ];
+
+    const rows = entries.map(e => [
+      `${e.participant.firstName} ${e.participant.lastName}`,
+      e.participant.email,
+      e.participant.club || '',
+      format(new Date(e.date), 'dd/MM/yyyy'),
+      getActivityTypeLabel(e.activityType),
+      e.kilometers.toFixed(1),
+      e.participationType === 'COLLECTIVE' ? 'Collectif' : 'Individuel',
+      e.participantCount.toString(),
+      e.duration || '',
+      e.location || '',
+      e.description || '',
+      e.validated ? 'Validé' : 'En attente',
+      format(new Date(e.createdAt), 'dd/MM/yyyy HH:mm')
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `kilometres_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -208,6 +257,14 @@ const KilometersManager = () => {
               En attente
             </button>
           </div>
+          <button
+            onClick={exportToCSV}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            title="Exporter en CSV"
+          >
+            <Download className="w-4 h-4" />
+            <span>Exporter CSV</span>
+          </button>
           <button
             onClick={handleValidateMultiple}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"

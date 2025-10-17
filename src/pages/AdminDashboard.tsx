@@ -33,6 +33,7 @@ const AdminDashboard = () => {
     totalEvents: 0,
     pendingPhotos: 0,
     pendingEntries: 0,
+    pendingKilometers: 0,
     rowingRegistrations: 0
   });
   const [loading, setLoading] = useState(true);
@@ -182,10 +183,14 @@ const AdminDashboard = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">En attente de validation</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Kilomètres</span>
+                    <span className="text-gray-600">Entrées</span>
                     <span className="text-2xl font-bold text-orange-600">{stats.pendingEntries}</span>
                   </div>
                   <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Kilomètres</span>
+                    <span className="text-xl font-bold text-orange-600">{stats.pendingKilometers.toFixed(1)} km</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                     <span className="text-gray-600">Photos</span>
                     <span className="text-2xl font-bold text-orange-600">{stats.pendingPhotos}</span>
                   </div>

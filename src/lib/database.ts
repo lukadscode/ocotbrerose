@@ -318,7 +318,9 @@ export const adminService = {
       totalClubs,
       totalEvents,
       pendingPhotos,
-      recentEntries
+      pendingEntries,
+      pendingKilometers,
+      rowingRegistrations
     ] = await Promise.all([
       prisma.participant.count(),
       prisma.kilometerEntry.aggregate({
@@ -328,11 +330,12 @@ export const adminService = {
       prisma.club.count(),
       prisma.event.count(),
       prisma.photo.count({ where: { approved: false } }),
-      prisma.kilometerEntry.count({
-        where: {
-          createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
-        }
-      })
+      prisma.kilometerEntry.count({ where: { validated: false } }),
+      prisma.kilometerEntry.aggregate({
+        _sum: { kilometers: true },
+        where: { validated: false }
+      }),
+      prisma.rowingCareCupRegistration.count()
     ]);
 
     return {
@@ -341,7 +344,9 @@ export const adminService = {
       totalClubs,
       totalEvents,
       pendingPhotos,
-      recentEntries
+      pendingEntries,
+      pendingKilometers: pendingKilometers._sum.kilometers || 0,
+      rowingRegistrations
     };
   }
 };
